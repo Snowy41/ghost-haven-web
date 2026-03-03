@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Flame, Coins, LogOut, User, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -14,18 +13,9 @@ const navItems = [
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, signOut, loading } = useAuth();
-
-  useEffect(() => {
-    if (!user) { setIsOwnerOrAdmin(false); return; }
-    supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
-      const roles = (data || []).map((r) => r.role);
-      setIsOwnerOrAdmin(roles.includes("owner") || roles.includes("admin"));
-    });
-  }, [user]);
+  const { user, profile, signOut, loading, isOwnerOrAdmin } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,6 +113,13 @@ const Navbar = () => {
               ))}
               {user && profile ? (
                 <>
+                  {isOwnerOrAdmin && (
+                    <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full gap-1.5">
+                        <Crown className="h-4 w-4" /> Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <div className="flex items-center gap-1.5 px-4 py-3 text-primary text-sm font-semibold">
                     <Coins className="h-4 w-4" /> {profile.hades_coins} Hades Coins
                   </div>

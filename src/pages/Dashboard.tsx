@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Crown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,31 +12,17 @@ import DashboardSubs from "@/components/dashboard/DashboardSubs";
 import DashboardConfigs from "@/components/dashboard/DashboardConfigs";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import DashboardBadges from "@/components/dashboard/DashboardBadges";
+import DashboardFiles from "@/components/dashboard/DashboardFiles";
 
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isOwnerOrAdmin, roles } = useAuth();
   const navigate = useNavigate();
-  const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState(false);
-  const [checkingRole, setCheckingRole] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
   }, [loading, user, navigate]);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .then(({ data }) => {
-        const roles = (data || []).map((r) => r.role);
-        setIsOwnerOrAdmin(roles.includes("owner") || roles.includes("admin"));
-        setCheckingRole(false);
-      });
-  }, [user]);
-
-  if (loading || checkingRole) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -77,26 +62,16 @@ const Dashboard = () => {
               <TabsTrigger value="badges">Badges</TabsTrigger>
               <TabsTrigger value="configs">Configs</TabsTrigger>
               <TabsTrigger value="subs">Subscriptions</TabsTrigger>
+              <TabsTrigger value="files">Client Files</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="stats">
-              <DashboardStats />
-            </TabsContent>
-            <TabsContent value="keys">
-              <DashboardKeys />
-            </TabsContent>
-            <TabsContent value="users">
-              <DashboardUsers />
-            </TabsContent>
-            <TabsContent value="badges">
-              <DashboardBadges />
-            </TabsContent>
-            <TabsContent value="configs">
-              <DashboardConfigs />
-            </TabsContent>
-            <TabsContent value="subs">
-              <DashboardSubs />
-            </TabsContent>
+            <TabsContent value="stats"><DashboardStats /></TabsContent>
+            <TabsContent value="keys"><DashboardKeys /></TabsContent>
+            <TabsContent value="users"><DashboardUsers /></TabsContent>
+            <TabsContent value="badges"><DashboardBadges /></TabsContent>
+            <TabsContent value="configs"><DashboardConfigs /></TabsContent>
+            <TabsContent value="subs"><DashboardSubs /></TabsContent>
+            <TabsContent value="files"><DashboardFiles /></TabsContent>
           </Tabs>
         </motion.div>
       </main>
