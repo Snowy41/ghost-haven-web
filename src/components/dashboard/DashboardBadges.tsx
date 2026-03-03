@@ -27,9 +27,11 @@ const BADGE_COLORS = [
   { value: "yellow", label: "Yellow", cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
   { value: "orange", label: "Orange", cls: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
   { value: "pink", label: "Pink", cls: "bg-pink-500/20 text-pink-400 border-pink-500/30" },
+  { value: "cyan", label: "Cyan", cls: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
+  { value: "emerald", label: "Emerald", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
 ];
 
-const BADGE_ICONS = ["award", "star", "zap", "flame", "heart", "gem", "trophy", "target"];
+const BADGE_ICONS = ["award", "star", "zap", "flame", "heart", "gem", "trophy", "target", "sword", "shield", "medal", "sparkles"];
 
 const DashboardBadges = () => {
   const { toast } = useToast();

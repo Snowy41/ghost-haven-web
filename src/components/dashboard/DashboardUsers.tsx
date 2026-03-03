@@ -52,8 +52,20 @@ const DashboardUsers = () => {
   };
 
   const assignRole = async (userId: string, role: string) => {
-    // Check if role already exists
-    const existing = roles.find((r) => r.user_id === userId && r.role === role);
+    const userRoles = getUserRoles(userId);
+
+    // Owner and admin are mutually exclusive — owner is higher
+    if (role === "owner" && userRoles.includes("admin")) {
+      // Remove admin first, then assign owner
+      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin" as any);
+    } else if (role === "admin" && userRoles.includes("owner")) {
+      toast({ title: "Cannot assign Admin to an Owner", description: "Remove Owner role first.", variant: "destructive" });
+      return;
+    } else if (role === "owner" || role === "admin") {
+      // Check no conflict
+    }
+
+    const existing = userRoles.includes(role);
     if (existing) {
       toast({ title: "Role already assigned", variant: "destructive" });
       return;
