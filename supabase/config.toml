@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.launcher-beta-download]
 verify_jwt = false
+
+[functions.launcher-jar-download]
+verify_jwt = false
