@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.launcher-jar-download]
 verify_jwt = false
+
+[functions.launcher-profile]
+verify_jwt = false
