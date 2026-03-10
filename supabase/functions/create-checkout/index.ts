@@ -39,7 +39,20 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub;
     const userEmail = claimsData.claims.email;
-    const { origin } = await req.json();
+
+    // Derive origin from the request's Origin header (browser-set, not spoofable)
+    // Fall back to Referer header, never trust client-supplied body origin
+    const requestOrigin = req.headers.get("Origin") || req.headers.get("Referer")?.replace(/\/[^/]*$/, "") || "";
+    const { origin: _bodyOrigin } = await req.json().catch(() => ({ origin: "" }));
+    
+    // Use the header-derived origin; reject if empty
+    const origin = requestOrigin;
+    if (!origin) {
+      return new Response(JSON.stringify({ error: "Missing origin" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Create or get Stripe customer
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
