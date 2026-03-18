@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import AvatarUpload from "@/components/profile/AvatarUpload";
 import UserConfigsList from "@/components/profile/UserConfigsList";
 import ProfileBadges from "@/components/profile/ProfileBadges";
+import DiscordLink from "@/components/profile/DiscordLink";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
