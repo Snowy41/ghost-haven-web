@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.launcher-profile]
 verify_jwt = false
+
+[functions.discord-oauth]
+verify_jwt = false

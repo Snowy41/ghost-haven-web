@@ -157,6 +157,9 @@ const Profile = () => {
             </CardContent>
           </Card>
 
+          {/* Discord Link */}
+          <DiscordLink />
+
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="glass border-border/30">
