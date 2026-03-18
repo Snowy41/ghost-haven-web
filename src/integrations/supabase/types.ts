@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      bug_report_replies: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin_reply: boolean
+          message: string
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          message: string
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          message?: string
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_report_replies_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "bug_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bug_reports: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       config_purchases: {
         Row: {
           config_id: string
@@ -162,6 +230,9 @@ export type Database = {
           banned_at: string | null
           created_at: string
           description: string | null
+          discord_avatar: string | null
+          discord_id: string | null
+          discord_username: string | null
           hades_coins: number
           id: string
           updated_at: string
@@ -173,6 +244,9 @@ export type Database = {
           banned_at?: string | null
           created_at?: string
           description?: string | null
+          discord_avatar?: string | null
+          discord_id?: string | null
+          discord_username?: string | null
           hades_coins?: number
           id?: string
           updated_at?: string
@@ -184,6 +258,9 @@ export type Database = {
           banned_at?: string | null
           created_at?: string
           description?: string | null
+          discord_avatar?: string | null
+          discord_id?: string | null
+          discord_username?: string | null
           hades_coins?: number
           id?: string
           updated_at?: string
