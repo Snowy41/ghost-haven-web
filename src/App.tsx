@@ -12,6 +12,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Dashboard from "./pages/Dashboard";
+import BetaReports from "./pages/BetaReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
