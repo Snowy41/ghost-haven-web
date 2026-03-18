@@ -44,6 +44,25 @@ const Navbar = () => {
               {item.label}
             </Link>
           ))}
+          {user && (
+            <Link
+              to="/beta-reports"
+              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === "/beta-reports"
+                  ? "text-destructive bg-destructive/10"
+                  : "text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Bug className="h-3.5 w-3.5" />
+                BETA
+              </span>
+              <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+              </span>
+            </Link>
+          )}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
