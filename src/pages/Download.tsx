@@ -30,6 +30,20 @@ const Download = () => {
   const { toast } = useToast();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [betaLoading, setBetaLoading] = useState(false);
+  const [showcaseImages, setShowcaseImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "preview_images")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && typeof data.value === "object") {
+          setShowcaseImages(data.value as Record<string, string>);
+        }
+      });
+  }, []);
 
   const handleSubscribe = async () => {
     if (!user || !session) {
