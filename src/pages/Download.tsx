@@ -230,18 +230,25 @@ const Download = () => {
               <p className="text-muted-foreground">Watch Hades dominate on every server.</p>
             </motion.div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {["PvP Highlights", "Bypass Demo"].map((title) => (
+              {[
+                { title: "PvP Highlights", key: "showcase_1" },
+                { title: "Bypass Demo", key: "showcase_2" },
+              ].map((item) => (
                 <motion.div
-                  key={title}
+                  key={item.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="glass rounded-xl aspect-video flex items-center justify-center group cursor-pointer hover:border-primary/30 transition-all"
+                  className="glass rounded-xl aspect-video flex items-center justify-center group cursor-pointer hover:border-primary/30 transition-all overflow-hidden"
                 >
-                  <div className="text-center">
-                    <Play className="h-10 w-10 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm text-muted-foreground">{title}</span>
-                  </div>
+                  {showcaseImages[item.key] ? (
+                    <img src={showcaseImages[item.key]} alt={item.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center">
+                      <Play className="h-10 w-10 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm text-muted-foreground">{item.title}</span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
