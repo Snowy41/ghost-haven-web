@@ -66,6 +66,7 @@ const Dashboard = () => {
               <TabsTrigger value="configs">Configs</TabsTrigger>
               <TabsTrigger value="subs">Subscriptions</TabsTrigger>
               <TabsTrigger value="files">Client Files</TabsTrigger>
+              <TabsTrigger value="media">Website Media</TabsTrigger>
               <TabsTrigger value="bugs">Bug Reports</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
