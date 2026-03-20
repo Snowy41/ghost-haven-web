@@ -59,18 +59,17 @@ const Download = () => {
     }
     setBetaLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("launcher-beta-download");
-      if (error) throw error;
-      if (data instanceof Blob) {
-        const url = URL.createObjectURL(data);
+      const response = await supabase.functions.invoke("launcher-beta-download");
+      if (response.error) throw response.error;
+      const result = response.data;
+      if (result?.url) {
         const a = document.createElement("a");
-        a.href = url;
+        a.href = result.url;
         a.download = "injector.exe";
         a.click();
-        URL.revokeObjectURL(url);
         toast({ title: "Download started!" });
       } else {
-        throw new Error("Download failed");
+        throw new Error("Download failed — no URL returned");
       }
     } catch (err: any) {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });

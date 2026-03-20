@@ -5,7 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// UUID v4 regex for input validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
@@ -45,7 +44,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify user owns this config (purchased or is the uploader)
     const [purchaseRes, configRes] = await Promise.all([
       supabase.from("config_purchases").select("id").eq("user_id", user.id).eq("config_id", config_id).maybeSingle(),
       supabase.from("configs").select("id, user_id, file_path, name").eq("id", config_id).single(),
@@ -74,32 +72,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Download from storage using service role
+    // Use signed URL instead of streaming (handles large files)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: fileData, error: fileError } = await supabaseAdmin.storage
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from("configs")
-      .download(config.file_path);
+      .createSignedUrl(config.file_path, 300);
 
-    if (fileError || !fileData) {
+    if (signedError || !signedData?.signedUrl) {
       return new Response(JSON.stringify({ error: "File download failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const filename = config.file_path.split("/").pop() || "config";
-
-    return new Response(fileData, {
+    return new Response(JSON.stringify({ url: signedData.signedUrl, filename: config.file_path.split("/").pop() || "config" }), {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
-      },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (_err) {
     return new Response(JSON.stringify({ error: "Internal server error" }), {

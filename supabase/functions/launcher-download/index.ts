@@ -38,22 +38,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check active subscription
-    const { data: sub } = await supabaseAdmin
-      .from("subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .single();
+    // Check if user is staff (owner/admin) — bypass subscription check
+    const { data: userRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
 
-    if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
-      return new Response(JSON.stringify({ error: "No active subscription" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const roles = (userRoles || []).map((r: any) => r.role);
+    const isStaff = roles.includes("owner") || roles.includes("admin");
+
+    if (!isStaff) {
+      // Check active subscription
+      const { data: sub } = await supabaseAdmin
+        .from("subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .single();
+
+      if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
+        return new Response(JSON.stringify({ error: "No active subscription" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    // Return signed URL instead of streaming (avoids memory limits)
+    // Return signed URL
     const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from("configs")
       .createSignedUrl("client/hades.dll", 300);

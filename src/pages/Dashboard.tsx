@@ -78,6 +78,7 @@ const Dashboard = () => {
             <TabsContent value="configs"><DashboardConfigs /></TabsContent>
             <TabsContent value="subs"><DashboardSubs /></TabsContent>
             <TabsContent value="files"><DashboardFiles /></TabsContent>
+            <TabsContent value="media"><DashboardMedia /></TabsContent>
             <TabsContent value="bugs"><DashboardBugReports /></TabsContent>
             <TabsContent value="settings"><DashboardSettings /></TabsContent>
           </Tabs>
