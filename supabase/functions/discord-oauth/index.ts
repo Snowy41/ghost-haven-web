@@ -27,15 +27,33 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get("code");
 
   if (!code) {
-    const userId = url.searchParams.get("user_id");
-    const redirect = url.searchParams.get("redirect") || "/";
-
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Missing user_id" }), {
-        status: 400,
+    // Require auth: verify the user's JWT to get their real user_id
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = user.id; // Use verified user id, ignore query param
+    const rawRedirect = url.searchParams.get("redirect") || "/";
+    // Only allow relative URLs to prevent open redirect
+    const redirect = rawRedirect.startsWith("/") ? rawRedirect : "/";
 
     // Build the Discord authorization URL
     const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/discord-oauth`;
@@ -55,6 +73,9 @@ Deno.serve(async (req) => {
 
     const { user_id, redirect } = JSON.parse(atob(stateParam));
     if (!user_id) throw new Error("Missing user_id in state");
+
+    // Validate redirect from state as well
+    const safeRedirect = (typeof redirect === "string" && redirect.startsWith("/")) ? redirect : "/profile";
 
     const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/discord-oauth`;
 
@@ -102,14 +123,18 @@ Deno.serve(async (req) => {
     // Redirect back to profile page with success
     return new Response(null, {
       status: 302,
-      headers: { Location: `${redirect}?discord=linked` },
+      headers: { Location: `${safeRedirect}?discord=linked` },
     });
   } catch (err) {
     console.error("Discord OAuth error:", err);
     const stateParam = url.searchParams.get("state");
     let redirect = "/profile";
     try {
-      if (stateParam) redirect = JSON.parse(atob(stateParam)).redirect || "/profile";
+      if (stateParam) {
+        const parsed = JSON.parse(atob(stateParam));
+        const r = parsed.redirect;
+        redirect = (typeof r === "string" && r.startsWith("/")) ? r : "/profile";
+      }
     } catch {}
 
     return new Response(null, {
