@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-client-key",
 };
 
-// Hardcoded client key — embed this same value in the DLL
-const CLIENT_KEY = "8F42B1C3-5D9E-4A7B-B2E1-9C3F4D5A6E7B";
+// Client key loaded from environment — set via secrets management
+const CLIENT_KEY = Deno.env.get("DLL_CLIENT_KEY") || "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

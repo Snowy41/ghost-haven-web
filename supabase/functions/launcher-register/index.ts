@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     });
 
     if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), {
+      return new Response(JSON.stringify({ error: "Registration failed. Check your details and try again." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
