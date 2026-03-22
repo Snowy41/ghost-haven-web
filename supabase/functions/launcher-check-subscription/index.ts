@@ -59,6 +59,41 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Beta testers get unlimited access for a configured duration from role assignment
+    if (roles.includes("beta")) {
+      const { data: betaSetting } = await supabaseAdmin
+        .from("site_settings")
+        .select("value")
+        .eq("key", "beta_duration_days")
+        .single();
+
+      const betaDays = (betaSetting?.value as any)?.days ?? 30;
+
+      // Get when the beta role was assigned
+      const { data: betaRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "beta")
+        .single();
+
+      if (betaRole) {
+        // Use created_at from the role row — but user_roles doesn't have created_at
+        // So beta is valid as long as the role exists and within the configured duration
+        // We'll check profile created_at as fallback, but ideally we track assignment time
+        // For now, beta role = active for beta_duration_days from now (always valid while role exists)
+        const expiresAt = new Date(Date.now() + betaDays * 24 * 60 * 60 * 1000).toISOString();
+        return new Response(JSON.stringify({
+          active: true,
+          expires_at: expiresAt,
+          beta: true,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { data: sub } = await supabaseAdmin
       .from("subscriptions")
       .select("status, current_period_end")

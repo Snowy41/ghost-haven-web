@@ -93,6 +93,7 @@ const DashboardUsers = () => {
     owner: Crown,
     admin: Shield,
     moderator: Star,
+    beta: Shield,
   };
 
   return (

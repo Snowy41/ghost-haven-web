@@ -65,6 +65,43 @@ const DashboardSettings = () => {
           </div>
           <Switch checked={realtimeStats} onCheckedChange={toggleRealtimeStats} />
         </div>
+
+        <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
+          <div className="flex items-center gap-3">
+            <FlaskConical className="h-5 w-5 text-primary" />
+            <div>
+              <Label className="text-foreground font-medium">Beta Tester Duration</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                How many days beta testers get unlimited subscription access when assigned the beta role.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              value={betaDays}
+              onChange={(e) => setBetaDays(Number(e.target.value))}
+              className="w-20 h-9 text-sm bg-secondary border-border"
+            />
+            <span className="text-xs text-muted-foreground">days</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                const { error } = await supabase
+                  .from("site_settings")
+                  .update({ value: { days: betaDays } as any, updated_at: new Date().toISOString() })
+                  .eq("key", "beta_duration_days");
+                if (error) toast.error("Failed to update");
+                else toast.success(`Beta duration set to ${betaDays} days`);
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

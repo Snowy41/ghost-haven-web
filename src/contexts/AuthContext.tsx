@@ -12,7 +12,7 @@ interface Profile {
   created_at: string;
 }
 
-type AppRole = "owner" | "admin" | "moderator" | "user";
+type AppRole = "owner" | "admin" | "moderator" | "user" | "beta";
 
 interface AuthContextType {
   user: User | null;
