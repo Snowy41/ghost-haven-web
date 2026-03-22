@@ -93,6 +93,7 @@ const DashboardUsers = () => {
     owner: Crown,
     admin: Shield,
     moderator: Star,
+    beta: Shield,
   };
 
   return (
@@ -145,6 +146,7 @@ const DashboardUsers = () => {
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="moderator">Moderator</SelectItem>
+                      <SelectItem value="beta">Beta Tester</SelectItem>
                       <SelectItem value="user">User</SelectItem>
                     </SelectContent>
                   </Select>

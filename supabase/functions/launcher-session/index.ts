@@ -152,12 +152,21 @@ Deno.serve(async (req) => {
 
       const roles = (rolesRes.data || []).map((r: any) => r.role);
       const isStaff = roles.includes("owner") || roles.includes("admin");
+      const isBeta = roles.includes("beta");
 
-      const subscription = isStaff
-        ? { active: true, unlimited: true }
-        : subRes.data
-          ? { active: true, expires: subRes.data.current_period_end }
-          : { active: false };
+      let subscription: any;
+      if (isStaff) {
+        subscription = { active: true, unlimited: true };
+      } else if (isBeta) {
+        const { data: betaSetting } = await supabaseAdmin
+          .from("site_settings").select("value").eq("key", "beta_duration_days").single();
+        const betaDays = (betaSetting?.value as any)?.days ?? 30;
+        subscription = { active: true, beta: true, expires: new Date(Date.now() + betaDays * 24 * 60 * 60 * 1000).toISOString() };
+      } else if (subRes.data) {
+        subscription = { active: true, expires: subRes.data.current_period_end };
+      } else {
+        subscription = { active: false };
+      }
 
       // Merge own + purchased configs (without file_path)
       const purchasedIds = (purchasesRes.data || []).map(
