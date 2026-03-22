@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Settings, Activity } from "lucide-react";
+import { Settings, Activity, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const DashboardSettings = () => {
