@@ -16,6 +16,7 @@ interface PublicProfile {
   created_at: string;
   user_id: string;
   banner_url: string | null;
+  banner_position: string | null;
 }
 
 const stagger = {
