@@ -34,7 +34,8 @@ const colorMap: Record<string, string> = {
   emerald: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
 };
 
-const badgeConfig: Record<string, { label: string; icon: typeof Crown; className: string }> = {
+const rolePriority = ["owner", "admin", "moderator"] as const;
+const roleConfig: Record<string, { label: string; icon: typeof Crown; className: string }> = {
   owner: { label: "Owner", icon: Crown, className: "bg-primary/20 text-primary border-primary/30" },
   admin: { label: "Admin", icon: Shield, className: "bg-red-500/20 text-red-400 border-red-500/30" },
   moderator: { label: "Moderator", icon: Star, className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
@@ -52,6 +53,12 @@ const ProfileBadges = ({ roles, createdAt, hasSubscription, userId }: ProfileBad
   const now = new Date();
   const daysSinceJoin = Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Determine if user is staff (owner/admin/mod)
+  const isStaff = roles.includes("owner") || roles.includes("admin") || roles.includes("moderator");
+
+  // Only show the HIGHEST role badge
+  const highestRole = rolePriority.find((r) => roles.includes(r));
+
   useEffect(() => {
     if (!userId) return;
     Promise.all([
@@ -67,25 +74,19 @@ const ProfileBadges = ({ roles, createdAt, hasSubscription, userId }: ProfileBad
     });
   }, [userId]);
 
-  // Only show owner OR admin, not both (owner is higher)
-  const displayRoles = roles.includes("owner")
-    ? roles.filter((r) => r !== "admin")
-    : roles;
-
   return (
     <div className="flex flex-wrap gap-2">
-      {/* Role badges */}
-      {displayRoles.map((role) => {
-        const config = badgeConfig[role];
-        if (!config) return null;
+      {/* Highest role badge only */}
+      {highestRole && (() => {
+        const config = roleConfig[highestRole];
         const Icon = config.icon;
         return (
-          <Badge key={role} variant="outline" className={config.className}>
+          <Badge variant="outline" className={config.className}>
             <Icon className="h-3 w-3 mr-1" />
             {config.label}
           </Badge>
         );
-      })}
+      })()}
 
       {/* Subscription badge */}
       {hasSubscription && (
@@ -106,52 +107,65 @@ const ProfileBadges = ({ roles, createdAt, hasSubscription, userId }: ProfileBad
         );
       })}
 
-      {/* Beta Tester */}
-      {daysSinceJoin <= 90 && (
-        <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
-          <Bug className="h-3 w-3 mr-1" />
-          Beta Tester
-        </Badge>
-      )}
+      {/* Tenure badges — only for non-staff users */}
+      {!isStaff && (
+        <>
+          {/* Newcomer — less than 7 days */}
+          {daysSinceJoin < 7 && (
+            <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              <Users className="h-3 w-3 mr-1" />
+              Newcomer
+            </Badge>
+          )}
 
-      {/* Early Adopter — joined within first 180 days */}
-      {daysSinceJoin <= 180 && daysSinceJoin > 90 && (
-        <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Early Adopter
-        </Badge>
-      )}
+          {/* New Member — 7 to 30 days */}
+          {daysSinceJoin >= 7 && daysSinceJoin < 30 && (
+            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+              <Sparkles className="h-3 w-3 mr-1" />
+              New Member
+            </Badge>
+          )}
 
-      {/* Veteran — 1 year+ */}
-      {daysSinceJoin >= 365 && (
-        <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-          <Clock className="h-3 w-3 mr-1" />
-          Veteran
-        </Badge>
-      )}
+          {/* Member — 30 days to 90 days */}
+          {daysSinceJoin >= 30 && daysSinceJoin < 90 && (
+            <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+              <Clock className="h-3 w-3 mr-1" />
+              Member
+            </Badge>
+          )}
 
-      {/* OG — 2 years+ */}
-      {daysSinceJoin >= 730 && (
-        <Badge variant="outline" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-          <Crown className="h-3 w-3 mr-1" />
-          OG
-        </Badge>
-      )}
+          {/* Early Adopter — 90 to 180 days */}
+          {daysSinceJoin >= 90 && daysSinceJoin < 180 && (
+            <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Early Adopter
+            </Badge>
+          )}
 
-      {/* Member — 30 days to 1 year */}
-      {daysSinceJoin >= 30 && daysSinceJoin < 365 && (
-        <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
-          <Clock className="h-3 w-3 mr-1" />
-          Member
-        </Badge>
-      )}
+          {/* Experienced — 180 days to 1 year */}
+          {daysSinceJoin >= 180 && daysSinceJoin < 365 && (
+            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              <Shield className="h-3 w-3 mr-1" />
+              Experienced
+            </Badge>
+          )}
 
-      {/* Newcomer — less than 7 days */}
-      {daysSinceJoin < 7 && (
-        <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-          <Users className="h-3 w-3 mr-1" />
-          Newcomer
-        </Badge>
+          {/* Veteran — 1 year to 2 years */}
+          {daysSinceJoin >= 365 && daysSinceJoin < 730 && (
+            <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+              <Clock className="h-3 w-3 mr-1" />
+              Veteran
+            </Badge>
+          )}
+
+          {/* OG — 2 years+ */}
+          {daysSinceJoin >= 730 && (
+            <Badge variant="outline" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+              <Crown className="h-3 w-3 mr-1" />
+              OG
+            </Badge>
+          )}
+        </>
       )}
 
       {/* Config Creator — uploaded at least 1 config */}

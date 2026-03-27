@@ -138,9 +138,9 @@ const Profile = () => {
         >
           {/* Profile Header with Banner */}
           <motion.div variants={fadeUp}>
-            <Card className="glass border-border/30 overflow-hidden">
+            <Card className="glass border-border/30 overflow-hidden p-0">
               <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
-              <CardContent className="p-8 -mt-12 relative z-10">
+              <CardContent className="px-8 pb-8 -mt-14 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="ring-4 ring-background rounded-full">
                     <AvatarUpload />
