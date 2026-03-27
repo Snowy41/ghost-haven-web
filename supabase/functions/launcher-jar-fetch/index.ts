@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAccess } from "../_shared/check-access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,48 +53,13 @@ Deno.serve(async (req) => {
     const { action, token } = body;
 
     if (action === "request_token") {
-      // Check roles
-      const { data: userRoles } = await supabaseAdmin
-        .from("user_roles")
-        .select("role, created_at")
-        .eq("user_id", user.id);
-
-      const roles = (userRoles || []).map((r: any) => r.role);
-      const isStaff = roles.includes("owner") || roles.includes("admin");
-
-      if (!isStaff) {
-        // Check beta access
-        let hasBetaAccess = false;
-        if (roles.includes("beta")) {
-          const betaRole = (userRoles || []).find((r: any) => r.role === "beta");
-          if (betaRole) {
-            const { data: betaSetting } = await supabaseAdmin
-              .from("site_settings")
-              .select("value")
-              .eq("key", "beta_duration_days")
-              .single();
-            const betaDays = (betaSetting?.value as any)?.days ?? 30;
-            const assignedAt = new Date(betaRole.created_at).getTime();
-            const expiresAt = assignedAt + betaDays * 24 * 60 * 60 * 1000;
-            hasBetaAccess = Date.now() < expiresAt;
-          }
-        }
-
-        if (!hasBetaAccess) {
-          const { data: sub } = await supabaseAdmin
-            .from("subscriptions")
-            .select("status, current_period_end")
-            .eq("user_id", user.id)
-            .eq("status", "active")
-            .single();
-
-          if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
-            return new Response(JSON.stringify({ error: "No active subscription" }), {
-              status: 403,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-        }
+      // Centralized access check (staff + beta + subscription)
+      const access = await checkAccess(supabaseAdmin, user.id);
+      if (!access.allowed) {
+        return new Response(JSON.stringify({ error: access.reason || "No active subscription" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Cleanup expired tokens first
