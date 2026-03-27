@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Bug, Plus, MessageSquare, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Send } from "lucide-react";
+import { Bug, Plus, MessageSquare, Send, ChevronDown, ChevronUp } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +55,16 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
   critical: { label: "Critical", color: "text-destructive" },
 };
 
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 const BetaReports = () => {
   const { user, profile, loading, isOwnerOrAdmin } = useAuth();
   const navigate = useNavigate();
@@ -82,12 +92,9 @@ const BetaReports = () => {
       .select("*, profiles!bug_reports_user_id_fkey(username, avatar_url)")
       .order("created_at", { ascending: false });
 
-    if (filter !== "all") {
-      query = query.eq("status", filter);
-    }
+    if (filter !== "all") query = query.eq("status", filter);
 
     const { data } = await query;
-    // Manual join fallback - fetch profiles separately if join fails
     if (data) {
       const reportsWithProfiles = await Promise.all(
         data.map(async (r: any) => {
@@ -118,7 +125,6 @@ const BetaReports = () => {
       .order("created_at", { ascending: true });
 
     if (data) {
-      // Fetch profiles for replies
       const repliesWithProfiles = await Promise.all(
         data.map(async (r: any) => {
           const { data: profileData } = await supabase
@@ -219,12 +225,19 @@ const BetaReports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <Navbar />
-      <main className="container mx-auto px-4 pt-24 pb-16 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+      {/* Background effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-destructive/3 blur-[150px]" />
+        <div className="absolute bottom-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/3 blur-[120px]" />
+      </div>
+
+      <main className="container relative z-10 mx-auto px-4 pt-24 pb-16 max-w-4xl">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-destructive/10 border border-destructive/20">
                 <Bug className="h-7 w-7 text-destructive" />
@@ -234,14 +247,14 @@ const BetaReports = () => {
                 <p className="text-sm text-muted-foreground">Help us improve by reporting issues</p>
               </div>
             </div>
-            <Button onClick={() => setShowCreate(!showCreate)} className="gradient-hades font-semibold glow-orange gap-2">
+            <Button onClick={() => setShowCreate(!showCreate)} className="gradient-hades font-semibold glow-red gap-2">
               <Plus className="h-4 w-4" /> New Report
             </Button>
-          </div>
+          </motion.div>
 
           {/* Create Form */}
           {showCreate && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+            <motion.div variants={fadeUp}>
               <Card className="glass border-primary/20">
                 <CardHeader>
                   <CardTitle className="font-display text-lg">Create Bug Report</CardTitle>
@@ -290,159 +303,166 @@ const BetaReports = () => {
           )}
 
           {/* Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <motion.div variants={fadeUp} className="flex items-center gap-2 flex-wrap">
             {["all", "open", "in_progress", "resolved", "closed"].map((f) => (
               <Button
                 key={f}
                 size="sm"
                 variant={filter === f ? "default" : "outline"}
                 onClick={() => setFilter(f)}
-                className={filter === f ? "gradient-hades" : ""}
+                className={filter === f ? "gradient-hades" : "hover:border-primary/30"}
               >
                 {f === "all" ? "All" : (statusConfig[f]?.label || f)}
               </Button>
             ))}
-          </div>
+          </motion.div>
 
           {/* Reports List */}
           {reports.length === 0 ? (
-            <Card className="glass border-border/30">
-              <CardContent className="py-16 text-center">
-                <Bug className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">No bug reports yet. Be the first to report an issue!</p>
-              </CardContent>
-            </Card>
+            <motion.div variants={fadeUp}>
+              <Card className="glass border-border/30">
+                <CardContent className="py-16 text-center">
+                  <Bug className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No bug reports yet. Be the first to report an issue!</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           ) : (
             <div className="space-y-3">
-              {reports.map((report) => {
+              {reports.map((report, idx) => {
                 const status = statusConfig[report.status] || statusConfig.open;
                 const prio = priorityConfig[report.priority] || priorityConfig.medium;
                 const isExpanded = expandedId === report.id;
                 const canReply = report.user_id === user?.id || isOwnerOrAdmin;
 
                 return (
-                  <Card key={report.id} className="glass border-border/30 hover:border-border/60 transition-colors">
-                    <CardContent className="p-4">
-                      <div
-                        className="flex items-start gap-3 cursor-pointer"
-                        onClick={() => handleExpand(report.id)}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="font-semibold text-foreground truncate">{report.title}</h3>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                            <span className={`text-xs font-medium ${prio.color}`}>{prio.label}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{report.profiles?.username || "Unknown"}</span>
-                            <span>•</span>
-                            <span>{new Date(report.created_at).toLocaleDateString()}</span>
-                            {replies[report.id] && (
-                              <>
-                                <span>•</span>
-                                <span className="flex items-center gap-1">
-                                  <MessageSquare className="h-3 w-3" />
-                                  {replies[report.id].length}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground shrink-0" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-                        )}
-                      </div>
-
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-4 space-y-4"
+                  <motion.div
+                    key={report.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                  >
+                    <Card className="glass border-border/30 hover:border-border/60 transition-all duration-200">
+                      <CardContent className="p-4">
+                        <div
+                          className="flex items-start gap-3 cursor-pointer"
+                          onClick={() => handleExpand(report.id)}
                         >
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap border-t border-border/30 pt-4">
-                            {report.description}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h3 className="font-semibold text-foreground truncate">{report.title}</h3>
+                              <Badge variant={status.variant}>{status.label}</Badge>
+                              <span className={`text-xs font-medium ${prio.color}`}>{prio.label}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{report.profiles?.username || "Unknown"}</span>
+                              <span>•</span>
+                              <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                              {replies[report.id] && (
+                                <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <MessageSquare className="h-3 w-3" />
+                                    {replies[report.id].length}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {isExpanded ? (
+                            <ChevronUp className="h-5 w-5 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
+                          )}
+                        </div>
 
-                          {/* Admin status control */}
-                          {isOwnerOrAdmin && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">Set status:</span>
-                              {["open", "in_progress", "resolved", "closed"].map((s) => (
-                                <Button
-                                  key={s}
-                                  size="sm"
-                                  variant={report.status === s ? "default" : "outline"}
-                                  className={`text-xs h-7 ${report.status === s ? "gradient-hades" : ""}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusChange(report.id, s);
-                                  }}
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="mt-4 space-y-4"
+                          >
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap border-t border-border/30 pt-4">
+                              {report.description}
+                            </p>
+
+                            {isOwnerOrAdmin && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Set status:</span>
+                                {["open", "in_progress", "resolved", "closed"].map((s) => (
+                                  <Button
+                                    key={s}
+                                    size="sm"
+                                    variant={report.status === s ? "default" : "outline"}
+                                    className={`text-xs h-7 ${report.status === s ? "gradient-hades" : ""}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStatusChange(report.id, s);
+                                    }}
+                                  >
+                                    {statusConfig[s]?.label || s}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Replies */}
+                            <div className="space-y-2">
+                              {(replies[report.id] || []).map((reply) => (
+                                <div
+                                  key={reply.id}
+                                  className={`p-3 rounded-lg text-sm ${
+                                    reply.is_admin_reply
+                                      ? "bg-primary/5 border border-primary/20"
+                                      : "bg-secondary/30"
+                                  }`}
                                 >
-                                  {statusConfig[s]?.label || s}
-                                </Button>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`font-medium ${reply.is_admin_reply ? "text-primary" : "text-foreground"}`}>
+                                      {reply.profiles?.username || "Unknown"}
+                                    </span>
+                                    {reply.is_admin_reply && (
+                                      <Badge variant="default" className="text-xs h-5 gradient-hades">Staff</Badge>
+                                    )}
+                                    <span className="text-xs text-muted-foreground ml-auto">
+                                      {new Date(reply.created_at).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-muted-foreground whitespace-pre-wrap">{reply.message}</p>
+                                </div>
                               ))}
                             </div>
-                          )}
 
-                          {/* Replies */}
-                          <div className="space-y-2">
-                            {(replies[report.id] || []).map((reply) => (
-                              <div
-                                key={reply.id}
-                                className={`p-3 rounded-lg text-sm ${
-                                  reply.is_admin_reply
-                                    ? "bg-primary/5 border border-primary/20"
-                                    : "bg-secondary/30"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className={`font-medium ${reply.is_admin_reply ? "text-primary" : "text-foreground"}`}>
-                                    {reply.profiles?.username || "Unknown"}
-                                  </span>
-                                  {reply.is_admin_reply && (
-                                    <Badge variant="default" className="text-xs h-5 gradient-hades">Staff</Badge>
-                                  )}
-                                  <span className="text-xs text-muted-foreground ml-auto">
-                                    {new Date(reply.created_at).toLocaleString()}
-                                  </span>
-                                </div>
-                                <p className="text-muted-foreground whitespace-pre-wrap">{reply.message}</p>
+                            {canReply && (
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder={isOwnerOrAdmin ? "Reply as staff..." : "Add a reply..."}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  maxLength={1000}
+                                  className="bg-secondary/50 border-border"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleReply(report.id);
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  onClick={() => handleReply(report.id)}
+                                  disabled={replySubmitting}
+                                  className="gradient-hades shrink-0"
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Reply input */}
-                          {canReply && (
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder={isOwnerOrAdmin ? "Reply as staff..." : "Add a reply..."}
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                maxLength={1000}
-                                className="bg-secondary/50 border-border"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleReply(report.id);
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="icon"
-                                onClick={() => handleReply(report.id)}
-                                disabled={replySubmitting}
-                                className="gradient-hades shrink-0"
-                              >
-                                <Send className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </CardContent>
-                  </Card>
+                            )}
+                          </motion.div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 );
               })}
             </div>

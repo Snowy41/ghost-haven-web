@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Calendar, MessageCircle } from "lucide-react";
+import { Package, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,6 +15,7 @@ interface PublicProfile {
   description: string | null;
   created_at: string;
   user_id: string;
+  banner_url: string | null;
 }
 
 const stagger = {
@@ -42,7 +43,7 @@ const UserProfile = () => {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("username, avatar_url, description, created_at, user_id")
+        .select("username, avatar_url, description, created_at, user_id, banner_url")
         .eq("username", username)
         .single();
 
@@ -52,7 +53,7 @@ const UserProfile = () => {
         return;
       }
 
-      setProfile(profileData as PublicProfile);
+      setProfile(profileData as unknown as PublicProfile);
 
       const [rolesRes, configsRes, subRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", profileData.user_id),
@@ -96,18 +97,31 @@ const UserProfile = () => {
     <div className="min-h-screen bg-background relative">
       <Navbar />
 
-      {/* Subtle background */}
+      {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-32 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/3 blur-[150px]" />
+        <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] rounded-full bg-accent/3 blur-[120px]" />
       </div>
 
       <main className="container relative z-10 mx-auto px-4 pt-24 pb-16 max-w-4xl">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-          {/* Profile Header */}
+          {/* Profile Header with Banner */}
           <motion.div variants={fadeUp}>
             <Card className="glass border-border/30 overflow-hidden">
-              <div className="h-20 gradient-hades opacity-20" />
-              <CardContent className="p-8 -mt-10">
+              {/* Banner */}
+              <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+                {profile.banner_url ? (
+                  <img
+                    src={profile.banner_url}
+                    alt={`${profile.username}'s banner`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full gradient-hades opacity-20" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
+              </div>
+              <CardContent className="p-8 -mt-12 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <Avatar className="h-24 w-24 border-4 border-background ring-2 ring-primary/30">
                     <AvatarImage src={profile.avatar_url || undefined} />

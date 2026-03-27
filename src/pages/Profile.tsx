@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import FloatingEmbers from "@/components/FloatingEmbers";
 import AvatarUpload from "@/components/profile/AvatarUpload";
+import BannerUpload from "@/components/profile/BannerUpload";
 import UserConfigsList from "@/components/profile/UserConfigsList";
 import ProfileBadges from "@/components/profile/ProfileBadges";
 import DiscordLink from "@/components/profile/DiscordLink";
@@ -38,14 +38,16 @@ const fadeUp = {
 };
 
 const Profile = () => {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile, roles } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState("");
-  const [roles, setRoles] = useState<string[]>([]);
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+
+  const canUploadBanner = roles.includes("owner") || roles.includes("admin") || roles.includes("moderator") || roles.includes("beta") || hasSubscription;
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -54,18 +56,22 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       setDescription(profile.description || "");
+      // Fetch banner_url separately since it's not in the Profile interface
+      if (user) {
+        supabase.from("profiles").select("banner_url").eq("user_id", user.id).single().then(({ data }) => {
+          setBannerUrl((data as any)?.banner_url || null);
+        });
+      }
     }
-  }, [profile]);
+  }, [profile, user]);
 
   useEffect(() => {
     if (!user) return;
     Promise.all([
       supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("user_roles").select("role").eq("user_id", user.id),
       supabase.from("subscriptions").select("status, current_period_end").eq("user_id", user.id).eq("status", "active").maybeSingle(),
-    ]).then(([txRes, rolesRes, subRes]) => {
+    ]).then(([txRes, subRes]) => {
       if (txRes.data) setTransactions(txRes.data);
-      setRoles((rolesRes.data || []).map((r) => r.role));
       setHasSubscription(!!subRes.data && new Date(subRes.data.current_period_end!) > new Date());
     });
   }, [user]);
@@ -117,7 +123,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background relative">
       <Navbar />
 
-      {/* Subtle background effects */}
+      {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-32 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/3 blur-[150px]" />
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] rounded-full bg-accent/3 blur-[120px]" />
@@ -130,12 +136,11 @@ const Profile = () => {
           animate="show"
           className="space-y-6"
         >
-          {/* Profile Header */}
+          {/* Profile Header with Banner */}
           <motion.div variants={fadeUp}>
             <Card className="glass border-border/30 overflow-hidden">
-              {/* Gradient banner */}
-              <div className="h-24 gradient-hades opacity-30" />
-              <CardContent className="p-8 -mt-12">
+              <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
+              <CardContent className="p-8 -mt-12 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="ring-4 ring-background rounded-full">
                     <AvatarUpload />
@@ -187,7 +192,7 @@ const Profile = () => {
 
           {/* Stats */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="glass border-border/30 group hover:border-primary/30 transition-colors">
+            <Card className="glass border-border/30 group hover:border-primary/30 transition-all duration-300 hover:glow-red">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
                   <Coins className="h-6 w-6 text-primary" />
@@ -198,7 +203,7 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass border-border/30 group hover:border-primary/30 transition-colors">
+            <Card className="glass border-border/30 group hover:border-primary/30 transition-all duration-300 hover:glow-red">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
                   <TrendingUp className="h-6 w-6 text-primary" />
@@ -209,7 +214,7 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass border-border/30 group hover:border-primary/30 transition-colors">
+            <Card className="glass border-border/30 group hover:border-primary/30 transition-all duration-300 hover:glow-red">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
                   <ArrowUpRight className="h-6 w-6 text-primary" />
