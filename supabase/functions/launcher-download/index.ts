@@ -38,29 +38,48 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check if user is staff (owner/admin) — bypass subscription check
+    // Check roles
     const { data: userRoles } = await supabaseAdmin
       .from("user_roles")
-      .select("role")
+      .select("role, created_at")
       .eq("user_id", user.id);
 
     const roles = (userRoles || []).map((r: any) => r.role);
     const isStaff = roles.includes("owner") || roles.includes("admin");
 
     if (!isStaff) {
-      // Check active subscription
-      const { data: sub } = await supabaseAdmin
-        .from("subscriptions")
-        .select("status, current_period_end")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .single();
+      // Check beta role with expiry
+      let hasBetaAccess = false;
+      if (roles.includes("beta")) {
+        const betaRole = (userRoles || []).find((r: any) => r.role === "beta");
+        if (betaRole) {
+          const { data: betaSetting } = await supabaseAdmin
+            .from("site_settings")
+            .select("value")
+            .eq("key", "beta_duration_days")
+            .single();
+          const betaDays = (betaSetting?.value as any)?.days ?? 30;
+          const assignedAt = new Date(betaRole.created_at).getTime();
+          const expiresAt = assignedAt + betaDays * 24 * 60 * 60 * 1000;
+          hasBetaAccess = Date.now() < expiresAt;
+        }
+      }
 
-      if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
-        return new Response(JSON.stringify({ error: "No active subscription" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (!hasBetaAccess) {
+        // Check regular subscription
+        const { data: sub } = await supabaseAdmin
+          .from("subscriptions")
+          .select("status, current_period_end")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single();
+
+        if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
+          return new Response(JSON.stringify({ error: "No active subscription" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 

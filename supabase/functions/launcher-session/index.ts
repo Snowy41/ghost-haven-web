@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       // Fetch roles, subscription, configs, badges in parallel
       const [rolesRes, subRes, purchasesRes, ownConfigsRes, badgesRes] =
         await Promise.all([
-          supabaseAdmin.from("user_roles").select("role").eq("user_id", userId),
+          supabaseAdmin.from("user_roles").select("role, created_at").eq("user_id", userId),
           supabaseAdmin
             .from("subscriptions")
             .select("status, current_period_end")

@@ -5,7 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-client-key",
 };
 
-// Client key loaded from environment — set via secrets management
 const CLIENT_KEY = Deno.env.get("DLL_CLIENT_KEY") || "";
 
 Deno.serve(async (req) => {
@@ -14,7 +13,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate client key header (anti-crack: only the compiled DLL knows this)
     const clientKey = req.headers.get("X-Client-Key");
     if (clientKey !== CLIENT_KEY) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -54,28 +52,47 @@ Deno.serve(async (req) => {
     const { action, token } = body;
 
     if (action === "request_token") {
-      // Check subscription or staff role
+      // Check roles
       const { data: userRoles } = await supabaseAdmin
         .from("user_roles")
-        .select("role")
+        .select("role, created_at")
         .eq("user_id", user.id);
 
       const roles = (userRoles || []).map((r: any) => r.role);
       const isStaff = roles.includes("owner") || roles.includes("admin");
 
       if (!isStaff) {
-        const { data: sub } = await supabaseAdmin
-          .from("subscriptions")
-          .select("status, current_period_end")
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .single();
+        // Check beta access
+        let hasBetaAccess = false;
+        if (roles.includes("beta")) {
+          const betaRole = (userRoles || []).find((r: any) => r.role === "beta");
+          if (betaRole) {
+            const { data: betaSetting } = await supabaseAdmin
+              .from("site_settings")
+              .select("value")
+              .eq("key", "beta_duration_days")
+              .single();
+            const betaDays = (betaSetting?.value as any)?.days ?? 30;
+            const assignedAt = new Date(betaRole.created_at).getTime();
+            const expiresAt = assignedAt + betaDays * 24 * 60 * 60 * 1000;
+            hasBetaAccess = Date.now() < expiresAt;
+          }
+        }
 
-        if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
-          return new Response(JSON.stringify({ error: "No active subscription" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        if (!hasBetaAccess) {
+          const { data: sub } = await supabaseAdmin
+            .from("subscriptions")
+            .select("status, current_period_end")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .single();
+
+          if (!sub || !sub.current_period_end || new Date(sub.current_period_end) <= new Date()) {
+            return new Response(JSON.stringify({ error: "No active subscription" }), {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
         }
       }
 
@@ -109,7 +126,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Validate and consume token
       const { data: tokenRow } = await supabaseAdmin
         .from("download_tokens")
         .select("*")
@@ -125,7 +141,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check token age (60 seconds max)
       const tokenAge = Date.now() - new Date(tokenRow.created_at).getTime();
       if (tokenAge > 60_000) {
         await supabaseAdmin
@@ -139,13 +154,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Mark token as used
       await supabaseAdmin
         .from("download_tokens")
         .update({ used: true })
         .eq("id", tokenRow.id);
 
-      // Return signed URL for JAR
       const { data: signedData, error: signedError } = await supabaseAdmin.storage
         .from("configs")
         .createSignedUrl("client/hades.jar", 300);
