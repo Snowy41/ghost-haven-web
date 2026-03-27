@@ -143,15 +143,20 @@ const Profile = () => {
               {/* Banner as full background */}
               <div className="absolute inset-0 z-0">
                 {bannerUrl ? (
-                  <img src={bannerUrl} alt="Profile banner" className="w-full h-full object-cover" />
+                  <img src={bannerUrl} alt="Profile banner" className="w-full h-full object-cover" style={{ objectPosition: bannerPosition }} />
                 ) : (
                   <div className="w-full h-full gradient-hades opacity-30" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
               </div>
-              {/* Upload button */}
+              {/* Upload / reposition button */}
               {canUploadBanner && (
-                <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
+                <BannerUpload
+                  bannerUrl={bannerUrl}
+                  bannerPosition={bannerPosition}
+                  canUpload={canUploadBanner}
+                  onBannerChange={(url, pos) => { setBannerUrl(url); setBannerPosition(pos); }}
+                />
               )}
               <CardContent className="px-8 pt-28 sm:pt-36 pb-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
