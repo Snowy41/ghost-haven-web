@@ -142,8 +142,8 @@ const Navbar = () => {
                 >
                   <Bug className="h-4 w-4" />
                   BETA Reports
-                  <span className="flex h-2 w-2 ml-1">
-                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-destructive opacity-75" />
+                  <span className="relative flex h-2 w-2 ml-1">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
                   </span>
                 </Link>

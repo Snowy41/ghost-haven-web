@@ -65,7 +65,13 @@ const Login = () => {
             </Button>
           </form>
 
-          <p className="text-sm text-muted-foreground text-center mt-6">
+          <div className="flex items-center justify-between mt-4">
+            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              Forgot password?
+            </Link>
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center mt-4">
             Don't have an account?{" "}
             <Link to="/register" className="text-primary hover:underline">Sign up</Link>
           </p>
