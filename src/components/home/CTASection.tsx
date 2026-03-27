@@ -15,17 +15,30 @@ const CTASection = () => {
         viewport={{ once: true }}
         className="container mx-auto px-4 text-center relative z-10"
       >
-        <Flame className="h-10 w-10 text-primary mx-auto mb-6" />
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          whileInView={{ scale: 1, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+        >
+          <Flame className="h-12 w-12 text-primary mx-auto mb-6 drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]" />
+        </motion.div>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
           Ready to <span className="gradient-hades-text">Dominate</span>?
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-8">
-          Join thousands of players using Hades. Get started in under 60 seconds.
+          Join thousands of players using the best undetected Minecraft cheat. Get started in under 60 seconds.
         </p>
         <Link to="/download">
-          <Button size="lg" className="gradient-hades glow-orange font-display font-semibold tracking-wider px-10 h-12">
-            Get Hades Now
-          </Button>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="inline-block"
+          >
+            <Button size="lg" className="gradient-hades glow-orange font-display font-semibold tracking-wider px-10 h-12">
+              Get Hades Now
+            </Button>
+          </motion.div>
         </Link>
       </motion.div>
     </section>
