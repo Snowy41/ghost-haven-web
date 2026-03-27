@@ -16,6 +16,7 @@ import DashboardFiles from "@/components/dashboard/DashboardFiles";
 import DashboardMedia from "@/components/dashboard/DashboardMedia";
 import DashboardSettings from "@/components/dashboard/DashboardSettings";
 import DashboardBugReports from "@/components/dashboard/DashboardBugReports";
+import DashboardChangelogs from "@/components/dashboard/DashboardChangelogs";
 
 const Dashboard = () => {
   const { user, loading, isOwnerOrAdmin, roles } = useAuth();
