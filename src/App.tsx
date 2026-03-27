@@ -33,6 +33,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <DiscordLinkPrompt />
+          <FriendsOverlay />
           <Suspense fallback={<PageSkeleton />}>
             <Routes>
               <Route path="/" element={<Index />} />
