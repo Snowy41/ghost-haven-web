@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAccess } from "../_shared/check-access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,8 +27,6 @@ Deno.serve(async (req) => {
     );
 
     // ─── ACTION: create ──────────────────────────────────────────────
-    // Called by the launcher/injector (authenticated user).
-    // Returns a session token that can be handed to the DLL.
     if (action === "create") {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
@@ -40,10 +39,7 @@ Deno.serve(async (req) => {
         { global: { headers: { Authorization: authHeader } } }
       );
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) return json({ error: "Invalid session" }, 401);
 
       // Check banned
@@ -100,9 +96,6 @@ Deno.serve(async (req) => {
     };
 
     // ─── ACTION: connect ─────────────────────────────────────────────
-    // Called by the DLL with X-Session-Token header.
-    // Returns full user profile data (same shape as launcher-profile).
-    // Does NOT expose internal fields like file_path.
     if (action === "connect") {
       const validation = await validateSessionToken();
       if ("error" in validation) return json({ error: validation.error }, validation.status);
@@ -111,9 +104,7 @@ Deno.serve(async (req) => {
       // Fetch profile
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select(
-          "user_id, username, avatar_url, description, hades_coins, created_at, banned_at"
-        )
+        .select("user_id, username, avatar_url, description, hades_coins, created_at, banned_at")
         .eq("user_id", userId)
         .single();
 
@@ -126,56 +117,18 @@ Deno.serve(async (req) => {
         return json({ error: "Account banned", banned_at: profile.banned_at }, 403);
       }
 
-      // Fetch roles, subscription, configs, badges in parallel
-      const [rolesRes, subRes, purchasesRes, ownConfigsRes, badgesRes] =
-        await Promise.all([
-          supabaseAdmin.from("user_roles").select("role, created_at").eq("user_id", userId),
-          supabaseAdmin
-            .from("subscriptions")
-            .select("status, current_period_end")
-            .eq("user_id", userId)
-            .eq("status", "active")
-            .maybeSingle(),
-          supabaseAdmin
-            .from("config_purchases")
-            .select("config_id")
-            .eq("user_id", userId),
-          supabaseAdmin
-            .from("configs")
-            .select("id, name, description, category, is_official, downloads, rating")
-            .eq("user_id", userId),
-          supabaseAdmin
-            .from("user_badges")
-            .select("badge_name, badge_icon, badge_color")
-            .eq("user_id", userId),
-        ]);
+      // Use centralized access check
+      const access = await checkAccess(supabaseAdmin, userId);
 
-      const roles = (rolesRes.data || []).map((r: any) => r.role);
-      const isStaff = roles.includes("owner") || roles.includes("admin");
-      const isBeta = roles.includes("beta");
-
-      let subscription: any;
-      if (isStaff) {
-        subscription = { active: true, unlimited: true };
-      } else if (isBeta) {
-        const betaRole = (rolesRes.data || []).find((r: any) => r.role === "beta");
-        const { data: betaSetting } = await supabaseAdmin
-          .from("site_settings").select("value").eq("key", "beta_duration_days").single();
-        const betaDays = (betaSetting?.value as any)?.days ?? 30;
-        const assignedAt = new Date(betaRole?.created_at || Date.now()).getTime();
-        const expiresAt = new Date(assignedAt + betaDays * 24 * 60 * 60 * 1000);
-        const isActive = expiresAt > new Date();
-        subscription = { active: isActive, beta: true, expires: expiresAt.toISOString() };
-      } else if (subRes.data) {
-        subscription = { active: true, expires: subRes.data.current_period_end };
-      } else {
-        subscription = { active: false };
-      }
+      // Fetch configs, purchases, badges in parallel
+      const [purchasesRes, ownConfigsRes, badgesRes] = await Promise.all([
+        supabaseAdmin.from("config_purchases").select("config_id").eq("user_id", userId),
+        supabaseAdmin.from("configs").select("id, name, description, category, is_official, downloads, rating").eq("user_id", userId),
+        supabaseAdmin.from("user_badges").select("badge_name, badge_icon, badge_color").eq("user_id", userId),
+      ]);
 
       // Merge own + purchased configs (without file_path)
-      const purchasedIds = (purchasesRes.data || []).map(
-        (p: any) => p.config_id
-      );
+      const purchasedIds = (purchasesRes.data || []).map((p: any) => p.config_id);
       const ownConfigs = ownConfigsRes.data || [];
 
       let purchasedConfigs: any[] = [];
@@ -201,16 +154,14 @@ Deno.serve(async (req) => {
           hades_coins: profile.hades_coins,
           created_at: profile.created_at,
         },
-        roles,
-        subscription,
+        roles: access.roles,
+        subscription: access.subscription,
         configs: Array.from(allConfigs.values()),
         badges: badgesRes.data || [],
       });
     }
 
     // ─── ACTION: download_config ─────────────────────────────────────
-    // Called by the DLL to download a config via session token.
-    // Returns a signed URL for the config file.
     if (action === "download_config") {
       const validation = await validateSessionToken();
       if ("error" in validation) return json({ error: validation.error }, validation.status);
@@ -220,13 +171,11 @@ Deno.serve(async (req) => {
         return json({ error: "config_id required" }, 400);
       }
 
-      // Validate UUID format
       const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!UUID_REGEX.test(config_id)) {
         return json({ error: "Invalid config_id" }, 400);
       }
 
-      // Check ownership or purchase
       const [configRes, purchaseRes] = await Promise.all([
         supabaseAdmin.from("configs").select("id, user_id, file_path, name").eq("id", config_id).single(),
         supabaseAdmin.from("config_purchases").select("id").eq("user_id", userId).eq("config_id", config_id).maybeSingle(),
@@ -256,7 +205,6 @@ Deno.serve(async (req) => {
     }
 
     // ─── ACTION: revoke ──────────────────────────────────────────────
-    // Called by the launcher to invalidate the session (e.g. on logout).
     if (action === "revoke") {
       const sessionToken = req.headers.get("X-Session-Token");
       if (!sessionToken) return json({ error: "Missing session token" }, 400);
@@ -270,7 +218,6 @@ Deno.serve(async (req) => {
     }
 
     // ─── ACTION: refresh ─────────────────────────────────────────────
-    // Called by the DLL to extend the session by another 24h.
     if (action === "refresh") {
       const validation = await validateSessionToken();
       if ("error" in validation) return json({ error: validation.error }, validation.status);
