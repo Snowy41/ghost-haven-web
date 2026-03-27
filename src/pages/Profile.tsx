@@ -138,9 +138,21 @@ const Profile = () => {
         >
           {/* Profile Header with Banner */}
           <motion.div variants={fadeUp}>
-            <Card className="glass border-border/30 overflow-hidden p-0">
-              <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
-              <CardContent className="px-8 pb-8 -mt-14 relative z-10">
+            <Card className="glass border-border/30 overflow-hidden p-0 relative">
+              {/* Banner as full background */}
+              <div className="absolute inset-0 z-0">
+                {bannerUrl ? (
+                  <img src={bannerUrl} alt="Profile banner" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full gradient-hades opacity-30" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
+              </div>
+              {/* Upload button */}
+              {canUploadBanner && (
+                <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
+              )}
+              <CardContent className="px-8 py-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="ring-4 ring-background rounded-full">
                     <AvatarUpload />
