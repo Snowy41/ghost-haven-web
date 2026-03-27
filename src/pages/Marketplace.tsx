@@ -4,6 +4,7 @@ import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
+import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
 import ConfigCard from "@/components/marketplace/ConfigCard";
 import UploadConfigDialog from "@/components/marketplace/UploadConfigDialog";
@@ -97,6 +98,11 @@ const Marketplace = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Config Marketplace"
+        description="Browse and download community configs for the Hades Minecraft client. PvP, bypass, movement, and utility configs shared by the community."
+        path="/marketplace"
+      />
       <Navbar />
       <main className="pt-24">
         {/* Header */}

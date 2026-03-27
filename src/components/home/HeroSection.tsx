@@ -60,7 +60,7 @@ const HeroSection = () => {
           </h1>
 
           <p className="max-w-xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 leading-relaxed">
-            The most advanced ghost injection client for Minecraft.
+            The most advanced <strong>ghost injection client</strong> for Minecraft.
             <br className="hidden sm:block" />
             Dominate every server. Stay invisible.
           </p>

@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import SEOHead from "@/components/SEOHead";
 
 const features = [
   { text: "All modules (100+)", icon: Crosshair },
@@ -169,6 +170,11 @@ const Download = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Download Hades"
+        description="Download the Hades ghost injection client for Minecraft. Free injector or Premium with 100+ modules, bypass engine, and stealth mode for €10/month."
+        path="/download"
+      />
       <Navbar />
       <main className="pt-24">
         {/* Hero */}
