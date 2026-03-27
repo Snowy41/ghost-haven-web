@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Ghost, Shield, Zap, Eye, Layers, Settings } from "lucide-react";
+import TiltCard from "@/components/TiltCard";
 
 const features = [
   {
@@ -70,16 +71,16 @@ const FeaturesSection = () => {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {features.map((f) => (
-            <motion.div
-              key={f.title}
-              variants={item}
-              className="group glass rounded-xl p-6 hover:border-primary/30 transition-all duration-300 hover:glow-orange"
-            >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                <f.icon className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="font-display text-sm font-semibold mb-2 tracking-wide">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+            <motion.div key={f.title} variants={item}>
+              <TiltCard className="h-full">
+                <div className="glass rounded-xl p-6 h-full border border-border/20 hover:border-primary/30 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <f.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="font-display text-sm font-semibold mb-2 tracking-wide">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                </div>
+              </TiltCard>
             </motion.div>
           ))}
         </motion.div>
