@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, X, UserPlus, Check, XIcon, MessageCircle, ExternalLink } from "lucide-react";
+import {
+  Users, X, UserPlus, Check, XIcon, MessageCircle, ExternalLink,
+  Send, ArrowLeft, Bell, ChevronRight
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +25,15 @@ interface Friendship {
   };
 }
 
+interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+}
+
 const FriendsOverlay = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -32,7 +44,19 @@ const FriendsOverlay = () => {
   const [searchUsername, setSearchUsername] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const fetchFriendships = async () => {
+  // Messaging state
+  const [activeChatFriend, setActiveChatFriend] = useState<Friendship | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const totalUnread = Array.from(unreadCounts.values()).reduce((s, c) => s + c, 0);
+  const pendingCount = pendingReceived.length;
+  const totalNotifications = pendingCount + totalUnread;
+
+  const fetchFriendships = useCallback(async () => {
     if (!user) return;
 
     const { data } = await supabase
@@ -42,12 +66,10 @@ const FriendsOverlay = () => {
 
     if (!data) return;
 
-    // Get all unique friend user IDs
     const friendUserIds = data.map((f) =>
       f.requester_id === user.id ? f.addressee_id : f.requester_id
     );
 
-    // Fetch profiles
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, username, avatar_url")
@@ -69,37 +91,128 @@ const FriendsOverlay = () => {
     setPendingSent(
       withProfiles.filter((f) => f.status === "pending" && f.requester_id === user.id)
     );
-  };
+  }, [user]);
+
+  // Fetch unread message counts
+  const fetchUnreadCounts = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("messages")
+      .select("sender_id")
+      .eq("receiver_id", user.id)
+      .eq("read", false);
+
+    if (!data) return;
+    const counts = new Map<string, number>();
+    data.forEach((m) => {
+      counts.set(m.sender_id, (counts.get(m.sender_id) || 0) + 1);
+    });
+    setUnreadCounts(counts);
+  }, [user]);
 
   useEffect(() => {
-    if (user && open) fetchFriendships();
-  }, [user, open]);
+    if (user) {
+      fetchFriendships();
+      fetchUnreadCounts();
+    }
+  }, [user, fetchFriendships, fetchUnreadCounts]);
 
-  // Realtime subscription
+  useEffect(() => {
+    if (user && open) {
+      fetchFriendships();
+      fetchUnreadCounts();
+    }
+  }, [user, open, fetchFriendships, fetchUnreadCounts]);
+
+  // Realtime: friendships + messages
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel("friendships-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "friendships" },
-        () => {
-          fetchFriendships();
+      .channel("friends-messages-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+        fetchFriendships();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const msg = payload.new as Message;
+        // If we're in the chat with this sender, add it and mark as read
+        if (activeChatFriend) {
+          const friendId = activeChatFriend.profile?.user_id;
+          if (msg.sender_id === friendId || msg.sender_id === user.id) {
+            setMessages((prev) => [...prev, msg]);
+            if (msg.sender_id === friendId && msg.receiver_id === user.id) {
+              supabase.from("messages").update({ read: true }).eq("id", msg.id).then();
+            }
+          } else {
+            fetchUnreadCounts();
+          }
+        } else {
+          fetchUnreadCounts();
         }
-      )
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, activeChatFriend, fetchFriendships, fetchUnreadCounts]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const openChat = async (friendship: Friendship) => {
+    if (!user || !friendship.profile) return;
+    setActiveChatFriend(friendship);
+    const friendId = friendship.profile.user_id;
+
+    // Fetch messages
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .or(
+        `and(sender_id.eq.${user.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${user.id})`
+      )
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    setMessages(data || []);
+
+    // Mark unread as read
+    await supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("sender_id", friendId)
+      .eq("receiver_id", user.id)
+      .eq("read", false);
+
+    setUnreadCounts((prev) => {
+      const next = new Map(prev);
+      next.delete(friendId);
+      return next;
+    });
+  };
+
+  const sendMessage = async () => {
+    if (!user || !activeChatFriend?.profile || !messageInput.trim()) return;
+    setSendingMessage(true);
+    const { error } = await supabase.from("messages").insert({
+      sender_id: user.id,
+      receiver_id: activeChatFriend.profile.user_id,
+      content: messageInput.trim(),
+    });
+    if (error) {
+      toast({ title: "Failed to send", variant: "destructive" });
+    }
+    setMessageInput("");
+    setSendingMessage(false);
+  };
 
   const handleAddFriend = async () => {
     if (!user || !searchUsername.trim()) return;
     setLoading(true);
 
-    // Find user by username
     const { data: targetProfile } = await supabase
       .from("profiles")
       .select("user_id, username")
@@ -118,7 +231,6 @@ const FriendsOverlay = () => {
       return;
     }
 
-    // Check if friendship already exists
     const { data: existing } = await supabase
       .from("friendships")
       .select("id")
@@ -142,7 +254,7 @@ const FriendsOverlay = () => {
     if (error) {
       toast({ title: "Failed to send request", variant: "destructive" });
     } else {
-      toast({ title: `Friend request sent to ${targetProfile.username}` });
+      toast({ title: `Request sent to ${targetProfile.username}` });
       setSearchUsername("");
       fetchFriendships();
     }
@@ -164,21 +276,48 @@ const FriendsOverlay = () => {
 
   if (!user) return null;
 
-  const pendingCount = pendingReceived.length;
-
   return (
     <>
       {/* Floating button */}
       <motion.button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-hades glow-orange flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
+        onClick={() => {
+          setOpen(!open);
+          if (open) setActiveChatFriend(null);
+        }}
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-hades glow-orange flex items-center justify-center shadow-2xl"
+        whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <Users className="h-6 w-6 text-white" />
-        {pendingCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-xs flex items-center justify-center font-bold">
-            {pendingCount}
-          </span>
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <X className="h-6 w-6 text-primary-foreground" />
+            </motion.div>
+          ) : (
+            <motion.div key="users" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <Users className="h-6 w-6 text-primary-foreground" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Notification badge */}
+        <AnimatePresence>
+          {totalNotifications > 0 && !open && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 rounded-full bg-destructive text-primary-foreground text-xs flex items-center justify-center font-bold shadow-lg"
+            >
+              {totalNotifications > 9 ? "9+" : totalNotifications}
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        {/* Pulse ring when notifications */}
+        {totalNotifications > 0 && !open && (
+          <span className="absolute inset-0 rounded-full animate-ping bg-primary/30 pointer-events-none" />
         )}
       </motion.button>
 
@@ -186,148 +325,232 @@ const FriendsOverlay = () => {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-6 z-50 w-80 max-h-[480px] rounded-2xl glass border border-border/50 shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-50 w-80 max-h-[520px] rounded-2xl glass border border-border/50 shadow-2xl flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border/30">
-              <h3 className="font-display text-sm font-bold tracking-wide text-foreground">
-                Friends
-              </h3>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-border/30">
-              {(["friends", "requests", "add"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-2 text-xs font-medium capitalize transition-colors relative ${
-                    tab === t
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+            <AnimatePresence mode="wait">
+              {activeChatFriend ? (
+                <ChatView
+                  key="chat"
+                  friend={activeChatFriend}
+                  messages={messages}
+                  messageInput={messageInput}
+                  setMessageInput={setMessageInput}
+                  onSend={sendMessage}
+                  sendingMessage={sendingMessage}
+                  onBack={() => setActiveChatFriend(null)}
+                  currentUserId={user.id}
+                  messagesEndRef={messagesEndRef}
+                />
+              ) : (
+                <motion.div
+                  key="list"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col h-full"
                 >
-                  {t === "requests" && pendingCount > 0 && (
-                    <span className="absolute top-1 right-2 h-2 w-2 rounded-full bg-primary" />
-                  )}
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {tab === "friends" && (
-                <>
-                  {friends.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-8">
-                      No friends yet. Add some!
-                    </p>
-                  ) : (
-                    friends.map((f) => (
-                      <FriendRow
-                        key={f.id}
-                        friendship={f}
-                        onRemove={() => handleReject(f.id)}
-                      />
-                    ))
-                  )}
-                </>
-              )}
-
-              {tab === "requests" && (
-                <>
-                  {pendingReceived.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground font-medium px-1">Received</p>
-                      {pendingReceived.map((f) => (
-                        <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={f.profile?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                              {f.profile?.username?.[0]?.toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="flex-1 text-sm font-medium truncate">
-                            {f.profile?.username || "Unknown"}
-                          </span>
-                          <button
-                            onClick={() => handleAccept(f.id)}
-                            className="h-7 w-7 rounded-full bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleReject(f.id)}
-                            className="h-7 w-7 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 flex items-center justify-center"
-                          >
-                            <XIcon className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-border/30">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      <h3 className="font-display text-sm font-bold tracking-wide text-foreground">
+                        Friends
+                      </h3>
+                      <span className="text-xs text-muted-foreground">({friends.length})</span>
                     </div>
-                  )}
-                  {pendingSent.length > 0 && (
-                    <div className="space-y-2 mt-3">
-                      <p className="text-xs text-muted-foreground font-medium px-1">Sent</p>
-                      {pendingSent.map((f) => (
-                        <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={f.profile?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                              {f.profile?.username?.[0]?.toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="flex-1 text-sm font-medium truncate">
-                            {f.profile?.username || "Unknown"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">Pending</span>
-                          <button
-                            onClick={() => handleReject(f.id)}
-                            className="h-7 w-7 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 flex items-center justify-center"
-                          >
-                            <XIcon className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {pendingReceived.length === 0 && pendingSent.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-8">No pending requests</p>
-                  )}
-                </>
-              )}
-
-              {tab === "add" && (
-                <div className="space-y-3 py-2">
-                  <p className="text-xs text-muted-foreground">Enter a username to send a friend request.</p>
-                  <div className="flex gap-2">
-                    <Input
-                      value={searchUsername}
-                      onChange={(e) => setSearchUsername(e.target.value)}
-                      placeholder="Username..."
-                      className="text-sm h-9 bg-secondary/50 border-border/50"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddFriend()}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddFriend}
-                      disabled={loading || !searchUsername.trim()}
-                      className="gradient-hades h-9 px-3"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </Button>
+                    <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
+
+                  {/* Tabs */}
+                  <div className="flex border-b border-border/30">
+                    {(["friends", "requests", "add"] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={`flex-1 py-2.5 text-xs font-medium capitalize transition-all relative ${
+                          tab === t
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {t === "requests" && pendingCount > 0 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-1.5 right-3 h-4 min-w-[1rem] px-0.5 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center font-bold"
+                          >
+                            {pendingCount}
+                          </motion.span>
+                        )}
+                        {t === "friends" && totalUnread > 0 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-1.5 right-3 h-4 min-w-[1rem] px-0.5 rounded-full bg-destructive text-[10px] text-primary-foreground flex items-center justify-center font-bold"
+                          >
+                            {totalUnread}
+                          </motion.span>
+                        )}
+                        {t}
+                        {tab === t && (
+                          <motion.div
+                            layoutId="tab-indicator"
+                            className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary"
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-1.5 max-h-[340px]">
+                    {tab === "friends" && (
+                      <>
+                        {friends.length === 0 ? (
+                          <div className="text-center py-12">
+                            <Users className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                            <p className="text-xs text-muted-foreground">No friends yet</p>
+                            <button
+                              onClick={() => setTab("add")}
+                              className="text-xs text-primary hover:underline mt-1"
+                            >
+                              Add your first friend
+                            </button>
+                          </div>
+                        ) : (
+                          friends.map((f, i) => (
+                            <motion.div
+                              key={f.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.03 }}
+                            >
+                              <FriendRow
+                                friendship={f}
+                                onRemove={() => handleReject(f.id)}
+                                onMessage={() => openChat(f)}
+                                unreadCount={unreadCounts.get(f.profile?.user_id || "") || 0}
+                              />
+                            </motion.div>
+                          ))
+                        )}
+                      </>
+                    )}
+
+                    {tab === "requests" && (
+                      <>
+                        {pendingReceived.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
+                              Received
+                            </p>
+                            {pendingReceived.map((f, i) => (
+                              <motion.div
+                                key={f.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="flex items-center gap-2 p-2.5 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                              >
+                                <Avatar className="h-8 w-8 ring-2 ring-primary/30">
+                                  <AvatarImage src={f.profile?.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                                    {f.profile?.username?.[0]?.toUpperCase() || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="flex-1 text-sm font-medium truncate">
+                                  {f.profile?.username || "Unknown"}
+                                </span>
+                                <button
+                                  onClick={() => handleAccept(f.id)}
+                                  className="h-7 w-7 rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleReject(f.id)}
+                                  className="h-7 w-7 rounded-full bg-destructive/20 text-destructive hover:bg-destructive hover:text-primary-foreground flex items-center justify-center transition-colors"
+                                >
+                                  <XIcon className="h-3.5 w-3.5" />
+                                </button>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                        {pendingSent.length > 0 && (
+                          <div className="space-y-1.5 mt-3">
+                            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
+                              Sent
+                            </p>
+                            {pendingSent.map((f) => (
+                              <div key={f.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-secondary/20">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={f.profile?.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs bg-muted text-muted-foreground">
+                                    {f.profile?.username?.[0]?.toUpperCase() || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="flex-1 text-sm font-medium truncate text-muted-foreground">
+                                  {f.profile?.username || "Unknown"}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">
+                                  Pending
+                                </span>
+                                <button
+                                  onClick={() => handleReject(f.id)}
+                                  className="h-6 w-6 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  <XIcon className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {pendingReceived.length === 0 && pendingSent.length === 0 && (
+                          <div className="text-center py-12">
+                            <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                            <p className="text-xs text-muted-foreground">No pending requests</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {tab === "add" && (
+                      <div className="space-y-3 py-4">
+                        <div className="text-center mb-2">
+                          <UserPlus className="h-8 w-8 mx-auto text-primary/40 mb-2" />
+                          <p className="text-xs text-muted-foreground">Enter a username to send a friend request</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            value={searchUsername}
+                            onChange={(e) => setSearchUsername(e.target.value)}
+                            placeholder="Username..."
+                            className="text-sm h-9 bg-secondary/50 border-border/50 focus:border-primary/50"
+                            onKeyDown={(e) => e.key === "Enter" && handleAddFriend()}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleAddFriend}
+                            disabled={loading || !searchUsername.trim()}
+                            className="gradient-hades h-9 px-3"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -335,43 +558,205 @@ const FriendsOverlay = () => {
   );
 };
 
+/* ── Friend Row ──────────────────────────────────────────────── */
 const FriendRow = ({
   friendship,
   onRemove,
+  onMessage,
+  unreadCount,
 }: {
   friendship: Friendship;
   onRemove: () => void;
+  onMessage: () => void;
+  unreadCount: number;
 }) => {
   const profile = friendship.profile;
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/30 transition-colors group">
-      <Avatar className="h-8 w-8">
-        <AvatarImage src={profile?.avatar_url || undefined} />
-        <AvatarFallback className="text-xs bg-primary/20 text-primary">
-          {profile?.username?.[0]?.toUpperCase() || "?"}
-        </AvatarFallback>
-      </Avatar>
-      <span className="flex-1 text-sm font-medium truncate">
-        {profile?.username || "Unknown"}
-      </span>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div
+      className="flex items-center gap-2 p-2 rounded-xl hover:bg-secondary/40 transition-all group cursor-pointer"
+      onClick={onMessage}
+    >
+      <div className="relative">
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={profile?.avatar_url || undefined} />
+          <AvatarFallback className="text-xs bg-primary/20 text-primary">
+            {profile?.username?.[0]?.toUpperCase() || "?"}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium truncate block">
+          {profile?.username || "Unknown"}
+        </span>
+      </div>
+      {unreadCount > 0 && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="h-5 min-w-[1.25rem] px-1 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center font-bold"
+        >
+          {unreadCount}
+        </motion.span>
+      )}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <Link
           to={`/user/${profile?.username}`}
-          className="h-7 w-7 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground"
+          className="h-7 w-7 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ExternalLink className="h-3 w-3" />
         </Link>
         <button
           onClick={onRemove}
-          className="h-7 w-7 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center text-destructive"
+          className="h-7 w-7 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
           title="Remove friend"
         >
           <XIcon className="h-3 w-3" />
         </button>
       </div>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
     </div>
   );
 };
+
+/* ── Chat View ───────────────────────────────────────────────── */
+const ChatView = ({
+  friend,
+  messages,
+  messageInput,
+  setMessageInput,
+  onSend,
+  sendingMessage,
+  onBack,
+  currentUserId,
+  messagesEndRef,
+}: {
+  friend: Friendship;
+  messages: Message[];
+  messageInput: string;
+  setMessageInput: (v: string) => void;
+  onSend: () => void;
+  sendingMessage: boolean;
+  onBack: () => void;
+  currentUserId: string;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
+}) => {
+  const profile = friend.profile;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.2 }}
+      className="flex flex-col h-full max-h-[520px]"
+    >
+      {/* Chat header */}
+      <div className="flex items-center gap-2 p-3 border-b border-border/30">
+        <button
+          onClick={onBack}
+          className="h-7 w-7 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <Avatar className="h-7 w-7">
+          <AvatarImage src={profile?.avatar_url || undefined} />
+          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+            {profile?.username?.[0]?.toUpperCase() || "?"}
+          </AvatarFallback>
+        </Avatar>
+        <Link
+          to={`/user/${profile?.username}`}
+          className="font-display text-sm font-semibold truncate hover:text-primary transition-colors flex-1"
+        >
+          {profile?.username || "Unknown"}
+        </Link>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+        {messages.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageCircle className="h-8 w-8 mx-auto text-muted-foreground/20 mb-2" />
+            <p className="text-xs text-muted-foreground">
+              No messages yet. Say hello!
+            </p>
+          </div>
+        ) : (
+          messages.map((msg, i) => {
+            const isMine = msg.sender_id === currentUserId;
+            const showTimestamp =
+              i === 0 ||
+              new Date(msg.created_at).getTime() - new Date(messages[i - 1].created_at).getTime() > 300000;
+
+            return (
+              <div key={msg.id}>
+                {showTimestamp && (
+                  <p className="text-[10px] text-muted-foreground/50 text-center my-2">
+                    {formatMessageTime(msg.created_at)}
+                  </p>
+                )}
+                <motion.div
+                  initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.15 }}
+                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+                      isMine
+                        ? "gradient-hades text-primary-foreground rounded-br-md"
+                        : "bg-secondary/60 text-foreground rounded-bl-md"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </motion.div>
+              </div>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-3 border-t border-border/30">
+        <div className="flex gap-2">
+          <Input
+            value={messageInput}
+            onChange={(e) => setMessageInput(e.target.value)}
+            placeholder="Type a message..."
+            className="text-sm h-9 bg-secondary/50 border-border/50 focus:border-primary/50"
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend()}
+            disabled={sendingMessage}
+          />
+          <Button
+            size="sm"
+            onClick={onSend}
+            disabled={sendingMessage || !messageInput.trim()}
+            className="gradient-hades h-9 w-9 p-0 flex-shrink-0"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+function formatMessageTime(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const days = Math.floor(diff / 86400000);
+
+  if (days === 0) {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } else if (days === 1) {
+    return "Yesterday " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } else {
+    return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+}
 
 export default FriendsOverlay;
