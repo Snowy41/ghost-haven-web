@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.discord-oauth]
 verify_jwt = false
+
+[functions.launcher-session]
+verify_jwt = false

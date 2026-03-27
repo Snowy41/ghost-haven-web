@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAccess } from "../_shared/check-access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,65 +39,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check roles
-    const { data: userRoles } = await supabaseAdmin
-      .from("user_roles")
-      .select("role, created_at")
-      .eq("user_id", user.id);
-
-    const roles = (userRoles || []).map((r: any) => r.role);
-    const isStaff = roles.includes("owner") || roles.includes("admin");
-
-    if (isStaff) {
-      return new Response(JSON.stringify({
-        active: true,
-        expires_at: null,
-        unlimited: true,
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Beta testers: access expires based on role assignment date + configured duration
-    if (roles.includes("beta")) {
-      const betaRole = (userRoles || []).find((r: any) => r.role === "beta");
-      if (betaRole) {
-        const { data: betaSetting } = await supabaseAdmin
-          .from("site_settings")
-          .select("value")
-          .eq("key", "beta_duration_days")
-          .single();
-
-        const betaDays = (betaSetting?.value as any)?.days ?? 30;
-        const assignedAt = new Date(betaRole.created_at).getTime();
-        const expiresAt = new Date(assignedAt + betaDays * 24 * 60 * 60 * 1000);
-        const isActive = expiresAt > new Date();
-
-        return new Response(JSON.stringify({
-          active: isActive,
-          expires_at: expiresAt.toISOString(),
-          beta: true,
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // Regular subscription
-    const { data: sub } = await supabaseAdmin
-      .from("subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .single();
-
-    const isActive = !!sub && !!sub.current_period_end && new Date(sub.current_period_end) > new Date();
+    // Centralized access check
+    const access = await checkAccess(supabaseAdmin, user.id);
 
     return new Response(JSON.stringify({
-      active: isActive,
-      expires_at: sub?.current_period_end || null,
+      active: access.allowed,
+      expires_at: access.subscription?.expires || null,
+      unlimited: access.subscription?.unlimited || false,
+      beta: access.subscription?.beta || false,
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

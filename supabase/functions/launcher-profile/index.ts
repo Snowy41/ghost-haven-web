@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAccess } from "../_shared/check-access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +31,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify user from token
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -60,26 +60,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch roles, subscription, configs, and badges in parallel
-    const [rolesRes, subRes, purchasesRes, ownConfigsRes, badgesRes] = await Promise.all([
-      supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id),
-      supabaseAdmin.from("subscriptions").select("status, current_period_end").eq("user_id", user.id).eq("status", "active").maybeSingle(),
+    // Use centralized access check
+    const access = await checkAccess(supabaseAdmin, user.id);
+
+    // Fetch configs, purchases, badges in parallel
+    const [purchasesRes, ownConfigsRes, badgesRes] = await Promise.all([
       supabaseAdmin.from("config_purchases").select("config_id").eq("user_id", user.id),
-      supabaseAdmin.from("configs").select("id, name, description, category, file_path, is_official, downloads, rating").eq("user_id", user.id),
+      // NO file_path exposed to client
+      supabaseAdmin.from("configs").select("id, name, description, category, is_official, downloads, rating").eq("user_id", user.id),
       supabaseAdmin.from("user_badges").select("badge_name, badge_icon, badge_color").eq("user_id", user.id),
     ]);
 
-    const roles = (rolesRes.data || []).map((r: any) => r.role);
-    const isStaff = roles.includes("owner") || roles.includes("admin");
-
-    // Subscription: staff get unlimited
-    const subscription = isStaff
-      ? { active: true, unlimited: true }
-      : subRes.data
-        ? { active: true, expires: subRes.data.current_period_end }
-        : { active: false };
-
-    // Merge own + purchased configs
+    // Merge own + purchased configs (without file_path)
     const purchasedIds = (purchasesRes.data || []).map((p: any) => p.config_id);
     const ownConfigs = ownConfigsRes.data || [];
 
@@ -87,7 +79,7 @@ Deno.serve(async (req) => {
     if (purchasedIds.length > 0) {
       const { data } = await supabaseAdmin
         .from("configs")
-        .select("id, name, description, category, file_path, is_official, downloads, rating")
+        .select("id, name, description, category, is_official, downloads, rating")
         .in("id", purchasedIds);
       purchasedConfigs = data || [];
     }
@@ -106,8 +98,8 @@ Deno.serve(async (req) => {
         hades_coins: profile.hades_coins,
         created_at: profile.created_at,
       },
-      roles,
-      subscription,
+      roles: access.roles,
+      subscription: access.subscription,
       configs: Array.from(allConfigs.values()),
       badges: badgesRes.data || [],
     }), {
