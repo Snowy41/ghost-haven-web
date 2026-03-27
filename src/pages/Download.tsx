@@ -18,12 +18,14 @@ const features = [
   { text: "Priority support", icon: Check },
 ];
 
-const changelog = [
-  { version: "v2.4.0", date: "Feb 8, 2026", changes: "New KillAura modes, Vulcan bypass update, UI refresh" },
-  { version: "v2.3.2", date: "Jan 28, 2026", changes: "Fixed Scaffold flagging on Hypixel, performance improvements" },
-  { version: "v2.3.0", date: "Jan 15, 2026", changes: "Added Stealth Mode, new config marketplace integration" },
-  { version: "v2.2.1", date: "Dec 30, 2025", changes: "Hotfix for Watchdog detection, Timer improvements" },
-];
+
+interface ChangelogEntry {
+  id: string;
+  title: string;
+  content: string;
+  version: string | null;
+  created_at: string;
+}
 
 const Download = () => {
   const { user, session } = useAuth();
@@ -31,18 +33,18 @@ const Download = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [betaLoading, setBetaLoading] = useState(false);
   const [showcaseImages, setShowcaseImages] = useState<Record<string, string>>({});
+  const [changelogs, setChangelogs] = useState<ChangelogEntry[]>([]);
 
   useEffect(() => {
-    supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "preview_images")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.value && typeof data.value === "object") {
-          setShowcaseImages(data.value as Record<string, string>);
-        }
-      });
+    Promise.all([
+      supabase.from("site_settings").select("value").eq("key", "preview_images").maybeSingle(),
+      supabase.from("changelogs").select("id, title, content, version, created_at").eq("published", true).order("created_at", { ascending: false }).limit(5),
+    ]).then(([imgRes, clRes]) => {
+      if (imgRes.data?.value && typeof imgRes.data.value === "object") {
+        setShowcaseImages(imgRes.data.value as Record<string, string>);
+      }
+      setChangelogs((clRes.data as any[]) || []);
+    });
   }, []);
 
   const handleSubscribe = async () => {
@@ -269,27 +271,41 @@ const Download = () => {
               </h2>
               <p className="text-muted-foreground">Latest updates and improvements.</p>
             </motion.div>
-            <div className="space-y-4">
-              {changelog.map((entry, i) => (
-                <motion.div
-                  key={entry.version}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="glass rounded-lg p-4 flex items-start gap-4"
-                >
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="font-display text-xs font-semibold text-primary">{entry.version}</span>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">{entry.date}</div>
-                    <p className="text-sm text-foreground">{entry.changes}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            {changelogs.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No updates yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {changelogs.map((entry, i) => (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="glass rounded-lg p-4 flex items-start gap-4"
+                  >
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      {entry.version && (
+                        <span className="font-display text-xs font-semibold text-primary">{entry.version}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm text-foreground mb-0.5">{entry.title}</div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{entry.content}</p>
+                    </div>
+                  </motion.div>
+                ))}
+                <div className="text-center pt-2">
+                  <Link to="/changelog" className="text-sm text-primary hover:underline">
+                    View all updates →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
