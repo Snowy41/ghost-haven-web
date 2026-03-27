@@ -19,24 +19,32 @@ const features = [
 ];
 
 
+interface ChangelogEntry {
+  id: string;
+  title: string;
+  content: string;
+  version: string | null;
+  created_at: string;
+}
+
 const Download = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [betaLoading, setBetaLoading] = useState(false);
   const [showcaseImages, setShowcaseImages] = useState<Record<string, string>>({});
+  const [changelogs, setChangelogs] = useState<ChangelogEntry[]>([]);
 
   useEffect(() => {
-    supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "preview_images")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.value && typeof data.value === "object") {
-          setShowcaseImages(data.value as Record<string, string>);
-        }
-      });
+    Promise.all([
+      supabase.from("site_settings").select("value").eq("key", "preview_images").maybeSingle(),
+      supabase.from("changelogs").select("id, title, content, version, created_at").eq("published", true).order("created_at", { ascending: false }).limit(5),
+    ]).then(([imgRes, clRes]) => {
+      if (imgRes.data?.value && typeof imgRes.data.value === "object") {
+        setShowcaseImages(imgRes.data.value as Record<string, string>);
+      }
+      setChangelogs((clRes.data as any[]) || []);
+    });
   }, []);
 
   const handleSubscribe = async () => {
