@@ -82,6 +82,7 @@ const Dashboard = () => {
             <TabsContent value="files"><DashboardFiles /></TabsContent>
             <TabsContent value="media"><DashboardMedia /></TabsContent>
             <TabsContent value="bugs"><DashboardBugReports /></TabsContent>
+            <TabsContent value="changelogs"><DashboardChangelogs /></TabsContent>
             <TabsContent value="settings"><DashboardSettings /></TabsContent>
           </Tabs>
         </motion.div>
