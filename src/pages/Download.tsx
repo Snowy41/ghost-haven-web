@@ -18,12 +18,6 @@ const features = [
   { text: "Priority support", icon: Check },
 ];
 
-const changelog = [
-  { version: "v2.4.0", date: "Feb 8, 2026", changes: "New KillAura modes, Vulcan bypass update, UI refresh" },
-  { version: "v2.3.2", date: "Jan 28, 2026", changes: "Fixed Scaffold flagging on Hypixel, performance improvements" },
-  { version: "v2.3.0", date: "Jan 15, 2026", changes: "Added Stealth Mode, new config marketplace integration" },
-  { version: "v2.2.1", date: "Dec 30, 2025", changes: "Hotfix for Watchdog detection, Timer improvements" },
-];
 
 const Download = () => {
   const { user, session } = useAuth();
