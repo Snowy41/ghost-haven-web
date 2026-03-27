@@ -98,6 +98,11 @@ const Marketplace = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Config Marketplace"
+        description="Browse and download community configs for the Hades Minecraft client. PvP, bypass, movement, and utility configs shared by the community."
+        path="/marketplace"
+      />
       <Navbar />
       <main className="pt-24">
         {/* Header */}
