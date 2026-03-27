@@ -51,7 +51,7 @@ const HeroSection = () => {
             <motion.img
               src={hadesLogo}
               alt=""
-              className="h-[1em] w-auto drop-shadow-[0_0_25px_hsl(348,80%,50%/0.6)] -mr-[0.03em]"
+              className="h-[1em] w-auto drop-shadow-[0_0_25px_hsl(348,80%,50%/0.6)] -mr-[0.08em]"
               initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
