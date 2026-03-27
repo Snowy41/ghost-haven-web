@@ -530,6 +530,7 @@ export type Database = {
         Returns: boolean
       }
       purchase_config: { Args: { p_config_id: string }; Returns: undefined }
+      scheduled_cleanup: { Args: never; Returns: undefined }
       validate_and_use_invite_key: {
         Args: { p_key: string; p_user_id: string }
         Returns: boolean
