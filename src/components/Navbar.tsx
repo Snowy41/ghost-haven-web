@@ -26,9 +26,9 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center group">
-          <img src={hadesLogo} alt="Hades" className="h-7 w-auto transition-all group-hover:drop-shadow-[0_0_8px_hsl(348,80%,50%)]" />
-          <span className="font-display text-xl font-bold gradient-hades-text tracking-widest ml-[-1px]">ADES</span>
+        <Link to="/" className="flex items-center group gap-0">
+          <img src={hadesLogo} alt="Hades" className="h-6 w-auto transition-all group-hover:drop-shadow-[0_0_8px_hsl(348,80%,50%)]" />
+          <span className="font-display text-lg font-extrabold gradient-hades-text tracking-[0.08em] ml-[2px]">ADES</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
