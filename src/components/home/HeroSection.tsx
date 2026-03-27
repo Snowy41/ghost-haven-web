@@ -46,30 +46,17 @@ const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Logo */}
-          <motion.img
-            src={hadesLogo}
-            alt="Hades Client"
-            className="h-20 w-20 mx-auto mb-6 drop-shadow-[0_0_20px_hsl(348,80%,50%/0.5)]"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          />
-
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-medium text-primary mb-8"
-          >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Ghost Injection • Undetected
-          </motion.div>
-
-          {/* Title */}
-          <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight mb-6">
-            <span className="gradient-hades-text glow-text">HADES</span>
+          {/* Title with logo as H */}
+          <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight mb-6 flex items-center justify-center">
+            <motion.img
+              src={hadesLogo}
+              alt=""
+              className="h-[0.85em] w-auto inline-block drop-shadow-[0_0_25px_hsl(348,80%,50%/0.6)] mr-[-0.02em]"
+              initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            />
+            <span className="gradient-hades-text glow-text">ADES</span>
           </h1>
 
           <p className="max-w-xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 leading-relaxed">
