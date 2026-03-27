@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Flame, Key, X } from "lucide-react";
+import { Key, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import FloatingEmbers from "@/components/FloatingEmbers";
+import hadesLogo from "@/assets/logo.png";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -55,7 +57,10 @@ const Register = () => {
       <Link to="/" className="absolute top-6 right-6 z-20 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
         <X className="h-5 w-5" />
       </Link>
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      <div className="absolute inset-0">
+        <FloatingEmbers />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -63,8 +68,15 @@ const Register = () => {
         className="w-full max-w-md mx-4 relative z-10"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <Flame className="h-8 w-8 text-primary" />
+          <Link to="/" className="inline-flex flex-col items-center gap-3">
+            <motion.img
+              src={hadesLogo}
+              alt="Hades"
+              className="h-14 w-14 drop-shadow-[0_0_15px_hsl(348,80%,50%/0.4)]"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            />
             <span className="font-display text-2xl font-bold gradient-hades-text tracking-widest">HADES</span>
           </Link>
         </div>
