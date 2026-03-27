@@ -271,27 +271,41 @@ const Download = () => {
               </h2>
               <p className="text-muted-foreground">Latest updates and improvements.</p>
             </motion.div>
-            <div className="space-y-4">
-              {changelog.map((entry, i) => (
-                <motion.div
-                  key={entry.version}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="glass rounded-lg p-4 flex items-start gap-4"
-                >
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="font-display text-xs font-semibold text-primary">{entry.version}</span>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">{entry.date}</div>
-                    <p className="text-sm text-foreground">{entry.changes}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            {changelogs.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No updates yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {changelogs.map((entry, i) => (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="glass rounded-lg p-4 flex items-start gap-4"
+                  >
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      {entry.version && (
+                        <span className="font-display text-xs font-semibold text-primary">{entry.version}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm text-foreground mb-0.5">{entry.title}</div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{entry.content}</p>
+                    </div>
+                  </motion.div>
+                ))}
+                <div className="text-center pt-2">
+                  <Link to="/changelog" className="text-sm text-primary hover:underline">
+                    View all updates →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
