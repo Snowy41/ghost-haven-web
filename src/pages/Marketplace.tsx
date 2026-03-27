@@ -4,6 +4,7 @@ import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
+import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
 import ConfigCard from "@/components/marketplace/ConfigCard";
 import UploadConfigDialog from "@/components/marketplace/UploadConfigDialog";
