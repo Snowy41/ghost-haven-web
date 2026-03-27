@@ -14,7 +14,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Dashboard from "./pages/Dashboard";
 import BetaReports from "./pages/BetaReports";
-import Changelog from "./pages/Changelog";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,7 +37,7 @@ const App = () => (
             <Route path="/user/:username" element={<UserProfile />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/beta-reports" element={<BetaReports />} />
-            <Route path="/changelog" element={<Changelog />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
