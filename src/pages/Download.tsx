@@ -299,11 +299,6 @@ const Download = () => {
                     </div>
                   </motion.div>
                 ))}
-                <div className="text-center pt-2">
-                  <Link to="/changelog" className="text-sm text-primary hover:underline">
-                    View all updates →
-                  </Link>
-                </div>
               </div>
             )}
           </div>
