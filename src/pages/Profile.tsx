@@ -44,8 +44,8 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState("");
-  const [hasSubscription, setHasSubscription] = useState(false);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [bannerPosition, setBannerPosition] = useState("50% 50%");
 
   const canUploadBanner = roles.includes("owner") || roles.includes("admin") || roles.includes("moderator") || roles.includes("beta") || hasSubscription;
 
