@@ -91,7 +91,7 @@ const HeroSection = () => {
         >
           {heroImage ? (
             <div className="mx-auto max-w-[600px] rounded-xl overflow-hidden glass glow-orange">
-              <img src={heroImage} alt="Hades Client Preview" className="w-full h-auto" />
+              <img src={heroImage} alt="Hades Minecraft cheat client in-game preview" className="w-full h-auto" width={600} height={340} />
             </div>
           ) : (
             <div className="mx-auto w-[280px] sm:w-[400px] h-[160px] sm:h-[220px] rounded-xl glass glow-orange overflow-hidden flex items-center justify-center">
