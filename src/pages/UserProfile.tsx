@@ -44,7 +44,7 @@ const UserProfile = () => {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("username, avatar_url, description, created_at, user_id, banner_url")
+        .select("username, avatar_url, description, created_at, user_id, banner_url, banner_position")
         .eq("username", username)
         .single();
 
