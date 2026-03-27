@@ -121,7 +121,7 @@ const UserProfile = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
               </div>
-              <CardContent className="px-8 py-8 relative z-10">
+              <CardContent className="px-8 pt-28 sm:pt-36 pb-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <Avatar className="h-24 w-24 border-4 border-background ring-2 ring-primary/30">
                     <AvatarImage src={profile.avatar_url || undefined} />
