@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Flame, X, CheckCircle } from "lucide-react";
+import { X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import hadesLogo from "@/assets/logo.png";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -53,8 +54,8 @@ const ResetPassword = () => {
         className="w-full max-w-md mx-4 relative z-10"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <Flame className="h-8 w-8 text-primary" />
+          <Link to="/" className="inline-flex flex-col items-center gap-3">
+            <img src={hadesLogo} alt="Hades" className="h-14 w-14 drop-shadow-[0_0_15px_hsl(348,80%,50%/0.4)]" />
             <span className="font-display text-2xl font-bold gradient-hades-text tracking-widest">HADES</span>
           </Link>
         </div>

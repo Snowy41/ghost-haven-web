@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Flame } from "lucide-react";
+import hadesLogo from "@/assets/logo.png";
 
 const CTASection = () => {
   return (
@@ -15,14 +15,15 @@ const CTASection = () => {
         viewport={{ once: true }}
         className="container mx-auto px-4 text-center relative z-10"
       >
-        <motion.div
+        <motion.img
+          src={hadesLogo}
+          alt="Hades"
+          className="h-14 w-14 mx-auto mb-6 drop-shadow-[0_0_15px_hsl(348,80%,50%/0.5)]"
           initial={{ scale: 0.8, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-        >
-          <Flame className="h-12 w-12 text-primary mx-auto mb-6 drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]" />
-        </motion.div>
+        />
         <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
           Ready to <span className="gradient-hades-text">Dominate</span>?
         </h2>

@@ -28,10 +28,10 @@ const FloatingEmbers = () => {
     const embers: Ember[] = [];
     const EMBER_COUNT = 25;
     const colors = [
-      "255, 147, 22",  // orange
-      "255, 180, 60",  // golden
-      "255, 100, 20",  // deep orange
-      "255, 200, 100", // warm yellow
+      "220, 38, 72",   // cherry red
+      "240, 60, 90",   // lighter cherry
+      "180, 25, 55",   // deep cherry
+      "255, 80, 100",  // warm pink
     ];
 
     const resize = () => {
