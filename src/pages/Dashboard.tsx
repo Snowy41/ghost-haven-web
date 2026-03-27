@@ -69,6 +69,7 @@ const Dashboard = () => {
               <TabsTrigger value="files">Client Files</TabsTrigger>
               <TabsTrigger value="media">Website Media</TabsTrigger>
               <TabsTrigger value="bugs">Bug Reports</TabsTrigger>
+              <TabsTrigger value="changelogs">Changelogs</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
