@@ -116,6 +116,7 @@ const UserProfile = () => {
                     src={profile.banner_url}
                     alt={`${profile.username}'s banner`}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: profile.banner_position || "50% 50%" }}
                   />
                 ) : (
                   <div className="w-full h-full gradient-hades opacity-20" />
