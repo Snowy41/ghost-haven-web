@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       // Fetch roles, subscription, configs, badges in parallel
       const [rolesRes, subRes, purchasesRes, ownConfigsRes, badgesRes] =
         await Promise.all([
-          supabaseAdmin.from("user_roles").select("role").eq("user_id", userId),
+          supabaseAdmin.from("user_roles").select("role, created_at").eq("user_id", userId),
           supabaseAdmin
             .from("subscriptions")
             .select("status, current_period_end")
@@ -158,10 +158,14 @@ Deno.serve(async (req) => {
       if (isStaff) {
         subscription = { active: true, unlimited: true };
       } else if (isBeta) {
+        const betaRole = (rolesRes.data || []).find((r: any) => r.role === "beta");
         const { data: betaSetting } = await supabaseAdmin
           .from("site_settings").select("value").eq("key", "beta_duration_days").single();
         const betaDays = (betaSetting?.value as any)?.days ?? 30;
-        subscription = { active: true, beta: true, expires: new Date(Date.now() + betaDays * 24 * 60 * 60 * 1000).toISOString() };
+        const assignedAt = new Date(betaRole?.created_at || Date.now()).getTime();
+        const expiresAt = new Date(assignedAt + betaDays * 24 * 60 * 60 * 1000);
+        const isActive = expiresAt > new Date();
+        subscription = { active: isActive, beta: true, expires: expiresAt.toISOString() };
       } else if (subRes.data) {
         subscription = { active: true, expires: subRes.data.current_period_end };
       } else {
