@@ -99,8 +99,8 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Config Marketplace"
-        description="Browse and download community configs for the Hades Minecraft client. PvP, bypass, movement, and utility configs shared by the community."
+        title="Minecraft Cheat Configs — Marketplace"
+        description="Browse and download cheat configs for the Hades Minecraft hack client. PvP configs, bypass presets, movement hacks, and utility setups shared by the community."
         path="/marketplace"
       />
       <Navbar />

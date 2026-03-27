@@ -60,9 +60,9 @@ const HeroSection = () => {
           </h1>
 
           <p className="max-w-xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 leading-relaxed">
-            The most advanced <strong>ghost injection client</strong> for Minecraft.
+            The best undetected <strong>Minecraft cheat</strong> with <strong>ghost injection</strong>.
             <br className="hidden sm:block" />
-            Dominate every server. Stay invisible.
+            <strong>Bypass</strong> every anti-cheat. Stay invisible.
           </p>
 
           {/* CTA Buttons */}

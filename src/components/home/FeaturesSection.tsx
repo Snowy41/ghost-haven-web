@@ -55,10 +55,10 @@ const FeaturesSection = () => {
           className="text-center mb-16"
         >
           <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-            Why <span className="gradient-hades-text">HADES</span>?
+            Why Choose <span className="gradient-hades-text">HADES</span> Cheat?
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Built from the ground up for stealth and performance.
+            Built for undetected Minecraft cheating — stealth, bypass, and performance.
           </p>
         </motion.div>
 
