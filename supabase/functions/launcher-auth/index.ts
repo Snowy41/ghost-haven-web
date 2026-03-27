@@ -5,12 +5,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter (per edge function instance)
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5; // max attempts
+const RATE_WINDOW = 60_000; // per 60 seconds
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const entry = attempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + RATE_WINDOW });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limit by IP
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (isRateLimited(`auth:${clientIp}`)) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" },
+      });
+    }
+
     const body = await req.json();
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
@@ -56,7 +81,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (profile?.banned_at) {
-      // Sign the user out so the token can't be reused
       await supabase.auth.signOut();
       return new Response(JSON.stringify({ error: "Account banned" }), {
         status: 403,
