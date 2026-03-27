@@ -61,7 +61,7 @@ const BannerUpload = ({ bannerUrl, canUpload }: BannerUploadProps) => {
   };
 
   return (
-    <div className="relative h-32 sm:h-40 w-full overflow-hidden rounded-t-lg">
+    <div className="relative h-36 sm:h-44 w-full overflow-hidden">
       {bannerUrl ? (
         <img
           src={bannerUrl}
@@ -71,8 +71,8 @@ const BannerUpload = ({ bannerUrl, canUpload }: BannerUploadProps) => {
       ) : (
         <div className="w-full h-full gradient-hades opacity-30" />
       )}
-      {/* Gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
+      {/* Subtle bottom fade for avatar overlap */}
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
       
       {canUpload && (
         <>
