@@ -1,20 +1,32 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Flame, Home, Download, Search } from "lucide-react";
+import { Home, Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import FloatingEmbers from "@/components/FloatingEmbers";
+import hadesLogo from "@/assets/logo.png";
 
 const NotFound = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px]" />
+      <div className="absolute inset-0">
+        <FloatingEmbers />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center relative z-10 px-4"
       >
-        <Link to="/" className="inline-flex items-center gap-2 mb-8">
-          <Flame className="h-8 w-8 text-primary" />
+        <Link to="/" className="inline-flex flex-col items-center gap-3 mb-8">
+          <motion.img
+            src={hadesLogo}
+            alt="Hades"
+            className="h-14 w-14 drop-shadow-[0_0_15px_hsl(348,80%,50%/0.4)]"
+            initial={{ scale: 0.5 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200 }}
+          />
           <span className="font-display text-2xl font-bold gradient-hades-text tracking-widest">HADES</span>
         </Link>
 
