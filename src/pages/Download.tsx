@@ -383,8 +383,11 @@ const Download = () => {
                     <motion.img
                       key={carouselIndex}
                       src={showcaseImages[carouselIndex]}
-                      alt={`Showcase ${carouselIndex + 1}`}
+                      alt={`Hades Minecraft cheat showcase ${carouselIndex + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      width={960}
+                      height={540}
                       initial={{ opacity: 0, x: 30 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -30 }}
