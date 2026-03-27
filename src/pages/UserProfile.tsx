@@ -107,9 +107,9 @@ const UserProfile = () => {
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
           {/* Profile Header with Banner */}
           <motion.div variants={fadeUp}>
-            <Card className="glass border-border/30 overflow-hidden p-0">
-              {/* Banner */}
-              <div className="relative h-36 sm:h-44 w-full overflow-hidden">
+            <Card className="glass border-border/30 overflow-hidden p-0 relative">
+              {/* Banner as full card background */}
+              <div className="absolute inset-0 z-0">
                 {profile.banner_url ? (
                   <img
                     src={profile.banner_url}
@@ -119,9 +119,9 @@ const UserProfile = () => {
                 ) : (
                   <div className="w-full h-full gradient-hades opacity-20" />
                 )}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
               </div>
-              <CardContent className="px-8 pb-8 -mt-14 relative z-10">
+              <CardContent className="px-8 py-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <Avatar className="h-24 w-24 border-4 border-background ring-2 ring-primary/30">
                     <AvatarImage src={profile.avatar_url || undefined} />
