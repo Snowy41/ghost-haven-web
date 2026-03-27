@@ -58,8 +58,9 @@ const Profile = () => {
       setDescription(profile.description || "");
       // Fetch banner_url separately since it's not in the Profile interface
       if (user) {
-        supabase.from("profiles").select("banner_url").eq("user_id", user.id).single().then(({ data }) => {
+        supabase.from("profiles").select("banner_url, banner_position").eq("user_id", user.id).single().then(({ data }) => {
           setBannerUrl((data as any)?.banner_url || null);
+          setBannerPosition((data as any)?.banner_position || "50% 50%");
         });
       }
     }
