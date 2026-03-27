@@ -46,6 +46,7 @@ const Profile = () => {
   const [description, setDescription] = useState("");
   const [hasSubscription, setHasSubscription] = useState(false);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [bannerPosition, setBannerPosition] = useState("50% 50%");
 
   const canUploadBanner = roles.includes("owner") || roles.includes("admin") || roles.includes("moderator") || roles.includes("beta") || hasSubscription;
 
@@ -58,8 +59,9 @@ const Profile = () => {
       setDescription(profile.description || "");
       // Fetch banner_url separately since it's not in the Profile interface
       if (user) {
-        supabase.from("profiles").select("banner_url").eq("user_id", user.id).single().then(({ data }) => {
+        supabase.from("profiles").select("banner_url, banner_position").eq("user_id", user.id).single().then(({ data }) => {
           setBannerUrl((data as any)?.banner_url || null);
+          setBannerPosition((data as any)?.banner_position || "50% 50%");
         });
       }
     }
@@ -142,15 +144,20 @@ const Profile = () => {
               {/* Banner as full background */}
               <div className="absolute inset-0 z-0">
                 {bannerUrl ? (
-                  <img src={bannerUrl} alt="Profile banner" className="w-full h-full object-cover" />
+                  <img src={bannerUrl} alt="Profile banner" className="w-full h-full object-cover" style={{ objectPosition: bannerPosition }} />
                 ) : (
                   <div className="w-full h-full gradient-hades opacity-30" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
               </div>
-              {/* Upload button */}
+              {/* Upload / reposition button */}
               {canUploadBanner && (
-                <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
+                <BannerUpload
+                  bannerUrl={bannerUrl}
+                  bannerPosition={bannerPosition}
+                  canUpload={canUploadBanner}
+                  onBannerChange={(url, pos) => { setBannerUrl(url); setBannerPosition(pos); }}
+                />
               )}
               <CardContent className="px-8 pt-28 sm:pt-36 pb-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">

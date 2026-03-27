@@ -16,6 +16,7 @@ interface PublicProfile {
   created_at: string;
   user_id: string;
   banner_url: string | null;
+  banner_position: string | null;
 }
 
 const stagger = {
@@ -43,7 +44,7 @@ const UserProfile = () => {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("username, avatar_url, description, created_at, user_id, banner_url")
+        .select("username, avatar_url, description, created_at, user_id, banner_url, banner_position")
         .eq("username", username)
         .single();
 
@@ -115,6 +116,7 @@ const UserProfile = () => {
                     src={profile.banner_url}
                     alt={`${profile.username}'s banner`}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: profile.banner_position || "50% 50%" }}
                   />
                 ) : (
                   <div className="w-full h-full gradient-hades opacity-20" />

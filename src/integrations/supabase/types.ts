@@ -339,6 +339,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           banned_at: string | null
+          banner_position: string | null
           banner_url: string | null
           created_at: string
           description: string | null
@@ -354,6 +355,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           banned_at?: string | null
+          banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null
@@ -369,6 +371,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           banned_at?: string | null
+          banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN banner_position text DEFAULT '50% 50%';
