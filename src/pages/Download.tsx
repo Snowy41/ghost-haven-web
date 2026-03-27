@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import SEOHead from "@/components/SEOHead";
 
 const features = [
   { text: "All modules (100+)", icon: Crosshair },
