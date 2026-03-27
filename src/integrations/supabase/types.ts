@@ -82,6 +82,39 @@ export type Database = {
         }
         Relationships: []
       }
+      changelogs: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          published: boolean
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          published?: boolean
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          published?: boolean
+          title?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       config_purchases: {
         Row: {
           config_id: string
