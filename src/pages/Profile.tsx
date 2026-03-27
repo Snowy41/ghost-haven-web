@@ -152,7 +152,7 @@ const Profile = () => {
               {canUploadBanner && (
                 <BannerUpload bannerUrl={bannerUrl} canUpload={canUploadBanner} />
               )}
-              <CardContent className="px-8 py-8 relative z-10">
+              <CardContent className="px-8 pt-28 sm:pt-36 pb-8 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="ring-4 ring-background rounded-full">
                     <AvatarUpload />
