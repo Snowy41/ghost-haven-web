@@ -5,12 +5,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 3; // max registration attempts
+const RATE_WINDOW = 300_000; // per 5 minutes
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const entry = attempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + RATE_WINDOW });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (isRateLimited(`register:${clientIp}`)) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Try again in a few minutes." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "300" },
+      });
+    }
+
     const body = await req.json();
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
@@ -24,7 +48,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Input validation
     if (email.length > 255 || password.length > 128 || password.length < 6) {
       return new Response(JSON.stringify({ error: "Invalid input: password must be 6-128 chars" }), {
         status: 400,
@@ -51,7 +74,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check invite key is valid and unused
+    // Check invite key
     const { data: keyData } = await supabaseAdmin
       .from("invite_keys")
       .select("id")

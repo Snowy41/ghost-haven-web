@@ -14,7 +14,8 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Dashboard from "./pages/Dashboard";
 import BetaReports from "./pages/BetaReports";
-
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,11 +34,12 @@ const App = () => (
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/:username" element={<UserProfile />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/beta-reports" element={<BetaReports />} />
-            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
