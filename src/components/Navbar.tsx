@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Flame, Coins, LogOut, User, Crown, Bug } from "lucide-react";
+import { Menu, X, Coins, LogOut, User, Crown, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import hadesLogo from "@/assets/logo.png";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -25,8 +26,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Flame className="h-7 w-7 text-primary group-hover:drop-shadow-[0_0_8px_hsl(32,95%,55%)] transition-all" />
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <img src={hadesLogo} alt="Hades" className="h-8 w-8 transition-all group-hover:drop-shadow-[0_0_8px_hsl(348,80%,50%)]" />
           <span className="font-display text-xl font-bold gradient-hades-text tracking-widest">HADES</span>
         </Link>
 
