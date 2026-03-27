@@ -171,8 +171,8 @@ const Download = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Download Hades"
-        description="Download the Hades ghost injection client for Minecraft. Free injector or Premium with 100+ modules, bypass engine, and stealth mode for €10/month."
+        title="Download Minecraft Cheat — Hades Client"
+        description="Download the Hades undetected Minecraft cheat. Free injector or Premium with 100+ hack modules, anti-cheat bypass, and ghost injection for €10/month."
         path="/download"
       />
       <Navbar />

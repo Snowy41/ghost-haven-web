@@ -8,8 +8,8 @@ interface SEOHeadProps {
 }
 
 const SEOHead = ({
-  title = "Hades Client — Ghost Injection Minecraft Client",
-  description = "The most advanced ghost injection client for Minecraft. 100+ modules, bypass engine, stealth mode. Dominate every server.",
+  title = "Hades Client — Undetected Minecraft Cheat | Ghost Injection",
+  description = "The best undetected Minecraft cheat. Ghost injection, anti-cheat bypass for Watchdog & Vulcan, 100+ hack modules. Download now.",
   path = "/",
   image = "https://hadesclient.com/og-image.png",
 }: SEOHeadProps) => {
