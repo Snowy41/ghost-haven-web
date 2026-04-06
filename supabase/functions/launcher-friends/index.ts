@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action, username, friendship_id } = body;
 
-    // ─── LIST: Get all accepted friends ────────────────────────────
+    // ─── LIST: Get all accepted friends + presence ─────────────────
     if (action === "list") {
       const { data: friendships } = await supabaseAdmin
         .from("friendships")
@@ -57,18 +57,41 @@ Deno.serve(async (req) => {
         f.requester_id === userId ? f.addressee_id : f.requester_id
       );
 
-      const { data: profiles } = await supabaseAdmin
-        .from("profiles")
-        .select("user_id, username, avatar_url, description")
-        .in("user_id", friendIds);
+      const [profilesRes, presenceRes] = await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select("user_id, username, avatar_url, description")
+          .in("user_id", friendIds),
+        supabaseAdmin
+          .from("user_presence")
+          .select("user_id, status, last_seen, server_ip, activity")
+          .in("user_id", friendIds),
+      ]);
+
+      const presenceMap = new Map(
+        (presenceRes.data || []).map((p: any) => [p.user_id, p])
+      );
 
       return json({
-        friends: (profiles || []).map((p: any) => ({
-          user_id: p.user_id,
-          username: p.username,
-          avatar_url: p.avatar_url,
-          description: p.description,
-        })),
+        friends: (profilesRes.data || []).map((p: any) => {
+          const presence = presenceMap.get(p.user_id);
+          const isOnline =
+            presence &&
+            new Date(presence.last_seen).getTime() > Date.now() - 5 * 60 * 1000;
+          return {
+            user_id: p.user_id,
+            username: p.username,
+            avatar_url: p.avatar_url,
+            description: p.description,
+            presence: isOnline
+              ? {
+                  status: presence.status,
+                  server_ip: presence.server_ip,
+                  activity: presence.activity,
+                }
+              : { status: "offline" },
+          };
+        }),
       });
     }
 
@@ -116,7 +139,6 @@ Deno.serve(async (req) => {
       if (!target) return json({ error: "User not found" }, 404);
       if (target.user_id === userId) return json({ error: "Cannot add yourself" }, 400);
 
-      // Check existing
       const { data: existing } = await supabaseAdmin
         .from("friendships")
         .select("id, status")
@@ -180,7 +202,126 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    return json({ error: "Invalid action. Use: list, pending, add, accept, remove" }, 400);
+    // ─── HEARTBEAT: Update user presence ───────────────────────────
+    if (action === "heartbeat") {
+      const { status: presenceStatus, server_ip, activity } = body;
+      const validStatuses = ["website", "launcher", "client"];
+      const finalStatus = validStatuses.includes(presenceStatus) ? presenceStatus : "launcher";
+
+      const { data: existing } = await supabaseAdmin
+        .from("user_presence")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabaseAdmin
+          .from("user_presence")
+          .update({
+            status: finalStatus,
+            last_seen: new Date().toISOString(),
+            server_ip: server_ip || null,
+            activity: activity || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
+      } else {
+        await supabaseAdmin.from("user_presence").insert({
+          user_id: userId,
+          status: finalStatus,
+          last_seen: new Date().toISOString(),
+          server_ip: server_ip || null,
+          activity: activity || null,
+        });
+      }
+
+      return json({ success: true });
+    }
+
+    // ─── INVITE: Invite a friend to play ───────────────────────────
+    if (action === "invite") {
+      const { receiver_id, server_ip, message } = body;
+      if (!receiver_id) return json({ error: "receiver_id required" }, 400);
+
+      // Check they're actually friends
+      const { data: friendship } = await supabaseAdmin
+        .from("friendships")
+        .select("id")
+        .eq("status", "accepted")
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${receiver_id}),and(requester_id.eq.${receiver_id},addressee_id.eq.${userId})`
+        )
+        .maybeSingle();
+
+      if (!friendship) return json({ error: "Not friends" }, 403);
+
+      const { error } = await supabaseAdmin.from("game_invites").insert({
+        sender_id: userId,
+        receiver_id,
+        server_ip: server_ip || null,
+        message: message || null,
+        status: "pending",
+      });
+
+      if (error) return json({ error: "Failed to send invite" }, 500);
+      return json({ success: true });
+    }
+
+    // ─── INVITES: List pending game invites ────────────────────────
+    if (action === "invites") {
+      const { data: invites } = await supabaseAdmin
+        .from("game_invites")
+        .select("*")
+        .eq("receiver_id", userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      const senderIds = (invites || []).map((i: any) => i.sender_id);
+      let profiles: any[] = [];
+      if (senderIds.length > 0) {
+        const { data } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id, username, avatar_url")
+          .in("user_id", senderIds);
+        profiles = data || [];
+      }
+      const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+
+      return json({
+        invites: (invites || []).map((i: any) => ({
+          ...i,
+          sender: profileMap.get(i.sender_id) || { username: "Unknown" },
+        })),
+      });
+    }
+
+    // ─── INVITE_RESPOND: Accept/decline an invite ──────────────────
+    if (action === "invite_respond") {
+      const { invite_id, response } = body;
+      if (!invite_id || !["accepted", "declined"].includes(response)) {
+        return json({ error: "invite_id and response (accepted/declined) required" }, 400);
+      }
+
+      const { data: invite } = await supabaseAdmin
+        .from("game_invites")
+        .select("receiver_id")
+        .eq("id", invite_id)
+        .eq("status", "pending")
+        .single();
+
+      if (!invite || invite.receiver_id !== userId) {
+        return json({ error: "Not authorized" }, 403);
+      }
+
+      await supabaseAdmin
+        .from("game_invites")
+        .update({ status: response, updated_at: new Date().toISOString() })
+        .eq("id", invite_id);
+
+      return json({ success: true });
+    }
+
+    return json({ error: "Invalid action. Use: list, pending, add, accept, remove, heartbeat, invite, invites, invite_respond" }, 400);
   } catch (_err) {
     return json({ error: "Internal server error" }, 500);
   }
