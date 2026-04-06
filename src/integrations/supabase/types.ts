@@ -278,6 +278,39 @@ export type Database = {
         }
         Relationships: []
       }
+      game_invites: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          receiver_id: string
+          sender_id: string
+          server_ip: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+          server_ip?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+          server_ip?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invite_keys: {
         Row: {
           created_at: string
@@ -526,6 +559,36 @@ export type Database = {
           badge_name?: string
           created_at?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_presence: {
+        Row: {
+          activity: string | null
+          id: string
+          last_seen: string
+          server_ip: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity?: string | null
+          id?: string
+          last_seen?: string
+          server_ip?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string | null
+          id?: string
+          last_seen?: string
+          server_ip?: string | null
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
