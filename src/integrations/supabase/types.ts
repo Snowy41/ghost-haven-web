@@ -347,6 +347,7 @@ export type Database = {
           discord_id: string | null
           discord_username: string | null
           hades_coins: number
+          hwid: string | null
           id: string
           updated_at: string
           user_id: string
@@ -363,6 +364,7 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
+          hwid?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -379,6 +381,7 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
+          hwid?: string | null
           id?: string
           updated_at?: string
           user_id?: string
