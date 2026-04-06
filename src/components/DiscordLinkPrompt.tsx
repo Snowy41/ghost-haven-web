@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const DISCORD_ICON = (
@@ -21,9 +22,19 @@ const DiscordLinkPrompt = () => {
   const dismissKey = `discord_prompt_dismissed_${user.id}`;
   if (typeof window !== "undefined" && sessionStorage.getItem(dismissKey)) return null;
 
-  const handleLink = () => {
-    const redirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?user_id=${user.id}&redirect=${encodeURIComponent(window.location.href)}`;
-    window.location.href = redirectUrl;
+  const handleLink = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    const redirect = encodeURIComponent(window.location.pathname);
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?redirect=${redirect}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      redirect: "manual",
+    });
+    const location = res.headers.get("Location");
+    if (location) {
+      window.location.href = location;
+    }
   };
 
   const handleDismiss = () => {

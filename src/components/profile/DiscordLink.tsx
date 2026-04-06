@@ -20,10 +20,23 @@ const DiscordLink = () => {
   const discordId = (profile as any)?.discord_id;
   const discordUsername = (profile as any)?.discord_username;
 
-  const handleLink = () => {
-    // Redirect to our edge function that starts the Discord OAuth flow
-    const redirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?user_id=${user?.id}&redirect=${encodeURIComponent(window.location.origin + "/profile")}`;
-    window.location.href = redirectUrl;
+  const handleLink = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast({ title: "Error", description: "Please log in first.", variant: "destructive" });
+      return;
+    }
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?redirect=${encodeURIComponent("/profile")}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      redirect: "manual",
+    });
+    const location = res.headers.get("Location");
+    if (location) {
+      window.location.href = location;
+    } else {
+      toast({ title: "Error", description: "Failed to start Discord linking.", variant: "destructive" });
+    }
   };
 
   const handleUnlink = async () => {
