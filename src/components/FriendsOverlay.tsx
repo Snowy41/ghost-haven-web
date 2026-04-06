@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, X, UserPlus, Check, XIcon, MessageCircle, ExternalLink,
-  Send, ArrowLeft, Bell, ChevronRight
+  Send, ArrowLeft, Bell, ChevronRight, Gamepad2, Sword
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+
+interface FriendPresence {
+  status: "website" | "launcher" | "client" | "offline";
+  server_ip?: string;
+  activity?: string;
+}
 
 interface Friendship {
   id: string;
@@ -23,6 +29,7 @@ interface Friendship {
     avatar_url: string | null;
     user_id: string;
   };
+  presence?: FriendPresence;
 }
 
 interface Message {
@@ -33,6 +40,34 @@ interface Message {
   read: boolean;
   created_at: string;
 }
+
+interface GameInvite {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  server_ip: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+  sender?: { username: string; avatar_url: string | null };
+}
+
+const PRESENCE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
+
+const statusColors: Record<string, string> = {
+  website: "bg-emerald-400",
+  launcher: "bg-blue-400",
+  client: "bg-amber-400",
+  offline: "bg-muted-foreground/40",
+};
+
+const statusLabels: Record<string, string> = {
+  website: "On Website",
+  launcher: "In Launcher",
+  client: "In Game",
+  offline: "Offline",
+};
 
 const FriendsOverlay = () => {
   const { user } = useAuth();
@@ -52,9 +87,49 @@ const FriendsOverlay = () => {
   const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Game invites
+  const [gameInvites, setGameInvites] = useState<GameInvite[]>([]);
+
   const totalUnread = Array.from(unreadCounts.values()).reduce((s, c) => s + c, 0);
   const pendingCount = pendingReceived.length;
-  const totalNotifications = pendingCount + totalUnread;
+  const inviteCount = gameInvites.length;
+  const totalNotifications = pendingCount + totalUnread + inviteCount;
+
+  // ─── Website heartbeat ──────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    const sendHeartbeat = async () => {
+      const { data: existing } = await supabase
+        .from("user_presence")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("user_presence")
+          .update({
+            status: "website",
+            last_seen: new Date().toISOString(),
+            server_ip: null,
+            activity: null,
+          })
+          .eq("user_id", user.id);
+      } else {
+        await supabase.from("user_presence").insert({
+          user_id: user.id,
+          status: "website",
+          last_seen: new Date().toISOString(),
+        });
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   const fetchFriendships = useCallback(async () => {
     if (!user) return;
@@ -70,21 +145,46 @@ const FriendsOverlay = () => {
       f.requester_id === user.id ? f.addressee_id : f.requester_id
     );
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, username, avatar_url")
-      .in("user_id", friendUserIds);
+    const [profilesRes, presenceRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("user_id, username, avatar_url")
+        .in("user_id", friendUserIds),
+      supabase
+        .from("user_presence")
+        .select("user_id, status, last_seen, server_ip, activity")
+        .in("user_id", friendUserIds),
+    ]);
 
-    const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+    const profileMap = new Map(profilesRes.data?.map((p) => [p.user_id, p]) || []);
+    const presenceMap = new Map(
+      (presenceRes.data || []).map((p: any) => [p.user_id, p])
+    );
 
-    const withProfiles = data.map((f) => ({
-      ...f,
-      profile: profileMap.get(
-        f.requester_id === user.id ? f.addressee_id : f.requester_id
-      ),
-    }));
+    const withProfiles = data.map((f) => {
+      const friendId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+      const presence = presenceMap.get(friendId);
+      const isOnline = presence && new Date(presence.last_seen).getTime() > Date.now() - PRESENCE_TIMEOUT;
 
-    setFriends(withProfiles.filter((f) => f.status === "accepted"));
+      return {
+        ...f,
+        profile: profileMap.get(friendId),
+        presence: isOnline
+          ? { status: presence.status, server_ip: presence.server_ip, activity: presence.activity }
+          : { status: "offline" as const },
+      };
+    });
+
+    // Sort: online first, then alphabetical
+    const accepted = withProfiles.filter((f) => f.status === "accepted");
+    accepted.sort((a, b) => {
+      const aOnline = a.presence?.status !== "offline" ? 0 : 1;
+      const bOnline = b.presence?.status !== "offline" ? 0 : 1;
+      if (aOnline !== bOnline) return aOnline - bOnline;
+      return (a.profile?.username || "").localeCompare(b.profile?.username || "");
+    });
+
+    setFriends(accepted);
     setPendingReceived(
       withProfiles.filter((f) => f.status === "pending" && f.addressee_id === user.id)
     );
@@ -93,7 +193,6 @@ const FriendsOverlay = () => {
     );
   }, [user]);
 
-  // Fetch unread message counts
   const fetchUnreadCounts = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -110,32 +209,63 @@ const FriendsOverlay = () => {
     setUnreadCounts(counts);
   }, [user]);
 
+  const fetchGameInvites = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("game_invites")
+      .select("*")
+      .eq("receiver_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (!data) { setGameInvites([]); return; }
+
+    const senderIds = data.map((i: any) => i.sender_id);
+    let profiles: any[] = [];
+    if (senderIds.length > 0) {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("user_id, username, avatar_url")
+        .in("user_id", senderIds);
+      profiles = p || [];
+    }
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+
+    setGameInvites(
+      data.map((i: any) => ({
+        ...i,
+        sender: profileMap.get(i.sender_id) || { username: "Unknown", avatar_url: null },
+      }))
+    );
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchFriendships();
       fetchUnreadCounts();
+      fetchGameInvites();
     }
-  }, [user, fetchFriendships, fetchUnreadCounts]);
+  }, [user, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
   useEffect(() => {
     if (user && open) {
       fetchFriendships();
       fetchUnreadCounts();
+      fetchGameInvites();
     }
-  }, [user, open, fetchFriendships, fetchUnreadCounts]);
+  }, [user, open, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
-  // Realtime: friendships + messages
+  // Realtime subscriptions
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel("friends-messages-realtime")
+      .channel("friends-realtime-v2")
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
         fetchFriendships();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const msg = payload.new as Message;
-        // If we're in the chat with this sender, add it and mark as read
         if (activeChatFriend) {
           const friendId = activeChatFriend.profile?.user_id;
           if (msg.sender_id === friendId || msg.sender_id === user.id) {
@@ -150,14 +280,19 @@ const FriendsOverlay = () => {
           fetchUnreadCounts();
         }
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, () => {
+        fetchFriendships();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_invites" }, () => {
+        fetchGameInvites();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, activeChatFriend, fetchFriendships, fetchUnreadCounts]);
+  }, [user, activeChatFriend, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -167,7 +302,6 @@ const FriendsOverlay = () => {
     setActiveChatFriend(friendship);
     const friendId = friendship.profile.user_id;
 
-    // Fetch messages
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -179,7 +313,6 @@ const FriendsOverlay = () => {
 
     setMessages(data || []);
 
-    // Mark unread as read
     await supabase
       .from("messages")
       .update({ read: true })
@@ -274,6 +407,29 @@ const FriendsOverlay = () => {
     fetchFriendships();
   };
 
+  const handleInviteToPlay = async (friendUserId: string) => {
+    if (!user) return;
+    const { error } = await supabase.from("game_invites").insert({
+      sender_id: user.id,
+      receiver_id: friendUserId,
+      status: "pending",
+    });
+    if (error) {
+      toast({ title: "Failed to send invite", variant: "destructive" });
+    } else {
+      toast({ title: "Game invite sent!" });
+    }
+  };
+
+  const handleRespondInvite = async (inviteId: string, response: "accepted" | "declined") => {
+    await supabase
+      .from("game_invites")
+      .update({ status: response, updated_at: new Date().toISOString() })
+      .eq("id", inviteId);
+    fetchGameInvites();
+    toast({ title: response === "accepted" ? "Invite accepted!" : "Invite declined" });
+  };
+
   if (!user) return null;
 
   return (
@@ -301,7 +457,6 @@ const FriendsOverlay = () => {
           )}
         </AnimatePresence>
 
-        {/* Notification badge */}
         <AnimatePresence>
           {totalNotifications > 0 && !open && (
             <motion.span
@@ -315,7 +470,6 @@ const FriendsOverlay = () => {
           )}
         </AnimatePresence>
 
-        {/* Pulse ring when notifications */}
         {totalNotifications > 0 && !open && (
           <span className="absolute inset-0 rounded-full animate-ping bg-primary/30 pointer-events-none" />
         )}
@@ -380,13 +534,13 @@ const FriendsOverlay = () => {
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        {t === "requests" && pendingCount > 0 && (
+                        {t === "requests" && (pendingCount + inviteCount) > 0 && (
                           <motion.span
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             className="absolute top-1.5 right-3 h-4 min-w-[1rem] px-0.5 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center font-bold"
                           >
-                            {pendingCount}
+                            {pendingCount + inviteCount}
                           </motion.span>
                         )}
                         {t === "friends" && totalUnread > 0 && (
@@ -436,6 +590,7 @@ const FriendsOverlay = () => {
                                 friendship={f}
                                 onRemove={() => handleReject(f.id)}
                                 onMessage={() => openChat(f)}
+                                onInvite={() => handleInviteToPlay(f.profile?.user_id || "")}
                                 unreadCount={unreadCounts.get(f.profile?.user_id || "") || 0}
                               />
                             </motion.div>
@@ -446,6 +601,52 @@ const FriendsOverlay = () => {
 
                     {tab === "requests" && (
                       <>
+                        {/* Game invites */}
+                        {gameInvites.length > 0 && (
+                          <div className="space-y-1.5 mb-3">
+                            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1 flex items-center gap-1">
+                              <Gamepad2 className="h-3 w-3" /> Game Invites
+                            </p>
+                            {gameInvites.map((inv, i) => (
+                              <motion.div
+                                key={inv.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20"
+                              >
+                                <Avatar className="h-8 w-8 ring-2 ring-amber-500/30">
+                                  <AvatarImage src={inv.sender?.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs bg-amber-500/20 text-amber-400">
+                                    {inv.sender?.username?.[0]?.toUpperCase() || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium truncate block">
+                                    {inv.sender?.username}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {inv.server_ip ? `Server: ${inv.server_ip}` : "Wants to play!"}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => handleRespondInvite(inv.id, "accepted")}
+                                  className="h-7 w-7 rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleRespondInvite(inv.id, "declined")}
+                                  className="h-7 w-7 rounded-full bg-destructive/20 text-destructive hover:bg-destructive hover:text-primary-foreground flex items-center justify-center transition-colors"
+                                >
+                                  <XIcon className="h-3.5 w-3.5" />
+                                </button>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Friend requests received */}
                         {pendingReceived.length > 0 && (
                           <div className="space-y-1.5">
                             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
@@ -484,6 +685,8 @@ const FriendsOverlay = () => {
                             ))}
                           </div>
                         )}
+
+                        {/* Friend requests sent */}
                         {pendingSent.length > 0 && (
                           <div className="space-y-1.5 mt-3">
                             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
@@ -513,7 +716,7 @@ const FriendsOverlay = () => {
                             ))}
                           </div>
                         )}
-                        {pendingReceived.length === 0 && pendingSent.length === 0 && (
+                        {pendingReceived.length === 0 && pendingSent.length === 0 && gameInvites.length === 0 && (
                           <div className="text-center py-12">
                             <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
                             <p className="text-xs text-muted-foreground">No pending requests</p>
@@ -563,14 +766,18 @@ const FriendRow = ({
   friendship,
   onRemove,
   onMessage,
+  onInvite,
   unreadCount,
 }: {
   friendship: Friendship;
   onRemove: () => void;
   onMessage: () => void;
+  onInvite: () => void;
   unreadCount: number;
 }) => {
   const profile = friendship.profile;
+  const presence = friendship.presence || { status: "offline" };
+  const isOnline = presence.status !== "offline";
 
   return (
     <div
@@ -584,10 +791,22 @@ const FriendRow = ({
             {profile?.username?.[0]?.toUpperCase() || "?"}
           </AvatarFallback>
         </Avatar>
+        {/* Presence dot */}
+        <span
+          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${statusColors[presence.status]} ${isOnline ? "animate-pulse" : ""}`}
+          title={statusLabels[presence.status]}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium truncate block">
           {profile?.username || "Unknown"}
+        </span>
+        <span className="text-[10px] text-muted-foreground truncate block">
+          {presence.status === "client" && presence.server_ip
+            ? `Playing on ${presence.server_ip}`
+            : presence.activity
+            ? presence.activity
+            : statusLabels[presence.status]}
         </span>
       </div>
       {unreadCount > 0 && (
@@ -600,6 +819,15 @@ const FriendRow = ({
         </motion.span>
       )}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+        {isOnline && (
+          <button
+            onClick={onInvite}
+            className="h-7 w-7 rounded-full hover:bg-amber-500/20 flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors"
+            title="Invite to play"
+          >
+            <Sword className="h-3 w-3" />
+          </button>
+        )}
         <Link
           to={`/user/${profile?.username}`}
           className="h-7 w-7 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -642,6 +870,7 @@ const ChatView = ({
   messagesEndRef: React.RefObject<HTMLDivElement>;
 }) => {
   const profile = friend.profile;
+  const presence = friend.presence || { status: "offline" };
 
   return (
     <motion.div
@@ -659,18 +888,28 @@ const ChatView = ({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <Avatar className="h-7 w-7">
-          <AvatarImage src={profile?.avatar_url || undefined} />
-          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
-            {profile?.username?.[0]?.toUpperCase() || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <Link
-          to={`/user/${profile?.username}`}
-          className="font-display text-sm font-semibold truncate hover:text-primary transition-colors flex-1"
-        >
-          {profile?.username || "Unknown"}
-        </Link>
+        <div className="relative">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={profile?.avatar_url || undefined} />
+            <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+              {profile?.username?.[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${statusColors[presence.status]}`}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Link
+            to={`/user/${profile?.username}`}
+            className="font-display text-sm font-semibold truncate hover:text-primary transition-colors block"
+          >
+            {profile?.username || "Unknown"}
+          </Link>
+          <span className="text-[10px] text-muted-foreground">
+            {statusLabels[presence.status]}
+          </span>
+        </div>
       </div>
 
       {/* Messages */}
