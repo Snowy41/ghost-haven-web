@@ -251,41 +251,45 @@ const FriendsOverlay = () => {
     }
   }, [user, open, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions (delayed to avoid token storm)
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel("friends-realtime-v2")
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-        fetchFriendships();
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        const msg = payload.new as Message;
-        if (activeChatFriend) {
-          const friendId = activeChatFriend.profile?.user_id;
-          if (msg.sender_id === friendId || msg.sender_id === user.id) {
-            setMessages((prev) => [...prev, msg]);
-            if (msg.sender_id === friendId && msg.receiver_id === user.id) {
-              supabase.from("messages").update({ read: true }).eq("id", msg.id).then();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const timeout = setTimeout(() => {
+      channel = supabase
+        .channel("friends-realtime-v2")
+        .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+          fetchFriendships();
+        })
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+          const msg = payload.new as Message;
+          if (activeChatFriend) {
+            const friendId = activeChatFriend.profile?.user_id;
+            if (msg.sender_id === friendId || msg.sender_id === user.id) {
+              setMessages((prev) => [...prev, msg]);
+              if (msg.sender_id === friendId && msg.receiver_id === user.id) {
+                supabase.from("messages").update({ read: true }).eq("id", msg.id).then();
+              }
+            } else {
+              fetchUnreadCounts();
             }
           } else {
             fetchUnreadCounts();
           }
-        } else {
-          fetchUnreadCounts();
-        }
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, () => {
-        fetchFriendships();
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_invites" }, () => {
-        fetchGameInvites();
-      })
-      .subscribe();
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, () => {
+          fetchFriendships();
+        })
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_invites" }, () => {
+          fetchGameInvites();
+        })
+        .subscribe();
+    }, 3000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(timeout);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user, activeChatFriend, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 

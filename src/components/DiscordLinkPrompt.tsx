@@ -12,15 +12,23 @@ const DISCORD_ICON = (
 
 const DiscordLinkPrompt = () => {
   const { user, profile } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    // Safe to read sessionStorage in initializer
+    return false;
+  });
 
   const discordLinked = !!(profile as any)?.discord_id;
 
-  if (!user || !profile || discordLinked || dismissed) return null;
+  // Check sessionStorage dismissal in effect, not during render
+  useEffect(() => {
+    if (user && typeof window !== "undefined") {
+      const key = `discord_prompt_dismissed_${user.id}`;
+      if (sessionStorage.getItem(key)) setDismissed(true);
+    }
+  }, [user]);
 
-  // Check if already dismissed this session
-  const dismissKey = `discord_prompt_dismissed_${user.id}`;
-  if (typeof window !== "undefined" && sessionStorage.getItem(dismissKey)) return null;
+  if (!user || !profile || discordLinked || dismissed) return null;
 
   const handleLink = async () => {
     const { data: { session } } = await supabase.auth.getSession();
