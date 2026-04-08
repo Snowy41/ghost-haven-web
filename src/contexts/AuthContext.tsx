@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -37,14 +37,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  // Use refs to track current user ID and prevent redundant state updates
+  const currentUserIdRef = useRef<string | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
       .single();
     setProfile(data as Profile | null);
-  };
+  }, []);
 
   const fetchRoles = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -55,61 +59,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRoles(userRoles);
   }, []);
 
-  const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
-  };
+  const refreshProfile = useCallback(async () => {
+    if (currentUserIdRef.current) await fetchProfile(currentUserIdRef.current);
+  }, [fetchProfile]);
 
   const refreshRoles = useCallback(async () => {
-    if (user) await fetchRoles(user.id);
-  }, [user, fetchRoles]);
+    if (currentUserIdRef.current) await fetchRoles(currentUserIdRef.current);
+  }, [fetchRoles]);
 
   const isOwnerOrAdmin = roles.includes("owner") || roles.includes("admin");
 
   useEffect(() => {
     let isMounted = true;
-    let lastUserId: string | null = null;
 
-    const loadUserData = (userId: string) => {
+    const handleSession = (newSession: Session | null) => {
       if (!isMounted) return;
-      // Only refetch if the user actually changed
-      if (userId === lastUserId) return;
-      lastUserId = userId;
-      fetchProfile(userId);
-      fetchRoles(userId);
-    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!isMounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Use setTimeout to avoid blocking the auth state change handler
-          setTimeout(() => loadUserData(session.user.id), 0);
+      const newUserId = newSession?.user?.id ?? null;
+      const prevUserId = currentUserIdRef.current;
+
+      // Always keep session ref up to date (for getSession calls)
+      sessionRef.current = newSession;
+
+      // Only update React state if user actually changed (login/logout/switch)
+      if (newUserId !== prevUserId) {
+        currentUserIdRef.current = newUserId;
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        if (newSession?.user) {
+          // Fire and forget - don't block auth state change
+          setTimeout(() => {
+            if (!isMounted) return;
+            fetchProfile(newSession.user.id);
+            fetchRoles(newSession.user.id);
+          }, 0);
         } else {
-          lastUserId = null;
           setProfile(null);
           setRoles([]);
         }
-        setLoading(false);
+      } else if (newSession) {
+        // Same user, just token refresh - update session silently without re-render storm
+        // Only update session state (not user) to keep token fresh for API calls
+        setSession(newSession);
+      }
+
+      setLoading(false);
+    };
+
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleSession(session);
       }
     );
 
+    // Then restore session from storage
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserData(session.user.id);
-      }
-      setLoading(false);
+      handleSession(session);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile, fetchRoles]);
 
   const signUp = async (email: string, password: string, username: string) => {
     const { error } = await supabase.auth.signUp({
@@ -129,6 +143,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    currentUserIdRef.current = null;
+    sessionRef.current = null;
     await supabase.auth.signOut();
     setProfile(null);
     setRoles([]);
