@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,15 +12,23 @@ const DISCORD_ICON = (
 
 const DiscordLinkPrompt = () => {
   const { user, profile } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    // Safe to read sessionStorage in initializer
+    return false;
+  });
 
   const discordLinked = !!(profile as any)?.discord_id;
 
-  if (!user || !profile || discordLinked || dismissed) return null;
+  // Check sessionStorage dismissal in effect, not during render
+  useEffect(() => {
+    if (user && typeof window !== "undefined") {
+      const key = `discord_prompt_dismissed_${user.id}`;
+      if (sessionStorage.getItem(key)) setDismissed(true);
+    }
+  }, [user]);
 
-  // Check if already dismissed this session
-  const dismissKey = `discord_prompt_dismissed_${user.id}`;
-  if (typeof window !== "undefined" && sessionStorage.getItem(dismissKey)) return null;
+  if (!user || !profile || discordLinked || dismissed) return null;
 
   const handleLink = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -39,7 +47,7 @@ const DiscordLinkPrompt = () => {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem(dismissKey, "1");
+    if (user) sessionStorage.setItem(`discord_prompt_dismissed_${user.id}`, "1");
   };
 
   return (
