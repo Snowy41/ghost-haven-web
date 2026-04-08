@@ -29,11 +29,14 @@ const DiscordLink = () => {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?redirect=${encodeURIComponent("/profile")}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${session.access_token}` },
-      redirect: "manual",
     });
-    const location = res.headers.get("Location");
-    if (location) {
-      window.location.href = location;
+    if (!res.ok) {
+      toast({ title: "Error", description: "Failed to start Discord linking.", variant: "destructive" });
+      return;
+    }
+    const data = await res.json();
+    if (data?.url) {
+      window.location.href = data.url;
     } else {
       toast({ title: "Error", description: "Failed to start Discord linking.", variant: "destructive" });
     }

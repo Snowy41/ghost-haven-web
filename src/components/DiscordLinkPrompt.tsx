@@ -37,11 +37,11 @@ const DiscordLinkPrompt = () => {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-oauth?redirect=${redirect}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${session.access_token}` },
-      redirect: "manual",
     });
-    const location = res.headers.get("Location");
-    if (location) {
-      window.location.href = location;
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data?.url) {
+      window.location.href = data.url;
     }
   };
 

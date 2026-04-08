@@ -89,9 +89,10 @@ Deno.serve(async (req) => {
     const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/discord-oauth`;
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(functionUrl)}&response_type=code&scope=identify&state=${encodeURIComponent(state)}`;
 
-    return new Response(null, {
-      status: 302,
-      headers: { Location: discordAuthUrl },
+    // Return URL as JSON so cross-origin fetch can read it (redirect: "manual" makes Location opaque)
+    return new Response(JSON.stringify({ url: discordAuthUrl }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
