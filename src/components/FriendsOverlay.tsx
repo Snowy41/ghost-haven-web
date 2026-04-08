@@ -232,12 +232,15 @@ const FriendsOverlay = () => {
     );
   }, [user]);
 
+  // Delay initial fetch to avoid token refresh storm on login
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+    const timeout = setTimeout(() => {
       fetchFriendships();
       fetchUnreadCounts();
       fetchGameInvites();
-    }
+    }, 2000);
+    return () => clearTimeout(timeout);
   }, [user, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
   useEffect(() => {
