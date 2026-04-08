@@ -95,40 +95,33 @@ const FriendsOverlay = () => {
   const inviteCount = gameInvites.length;
   const totalNotifications = pendingCount + totalUnread + inviteCount;
 
-  // ─── Website heartbeat ──────────────────────────────────────────
+  // ─── Website heartbeat (delayed to avoid token refresh storm) ───
   useEffect(() => {
     if (!user) return;
 
     const sendHeartbeat = async () => {
-      const { data: existing } = await supabase
+      await supabase
         .from("user_presence")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from("user_presence")
-          .update({
+        .upsert(
+          {
+            user_id: user.id,
             status: "website",
             last_seen: new Date().toISOString(),
             server_ip: null,
             activity: null,
-          })
-          .eq("user_id", user.id);
-      } else {
-        await supabase.from("user_presence").insert({
-          user_id: user.id,
-          status: "website",
-          last_seen: new Date().toISOString(),
-        });
-      }
+          },
+          { onConflict: "user_id" }
+        );
     };
 
-    sendHeartbeat();
+    // Delay first heartbeat to let auth session stabilize
+    const initTimeout = setTimeout(sendHeartbeat, 3000);
     const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initTimeout);
+      clearInterval(interval);
+    };
   }, [user]);
 
   const fetchFriendships = useCallback(async () => {
@@ -239,12 +232,15 @@ const FriendsOverlay = () => {
     );
   }, [user]);
 
+  // Delay initial fetch to avoid token refresh storm on login
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+    const timeout = setTimeout(() => {
       fetchFriendships();
       fetchUnreadCounts();
       fetchGameInvites();
-    }
+    }, 2000);
+    return () => clearTimeout(timeout);
   }, [user, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
   useEffect(() => {
