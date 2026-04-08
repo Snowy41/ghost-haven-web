@@ -122,7 +122,7 @@ const FriendsOverlay = () => {
       clearTimeout(initTimeout);
       clearInterval(interval);
     };
-  }, [user]);
+  }, [user?.id]);
 
   const fetchFriendships = useCallback(async () => {
     if (!user) return;
@@ -184,7 +184,7 @@ const FriendsOverlay = () => {
     setPendingSent(
       withProfiles.filter((f) => f.status === "pending" && f.requester_id === user.id)
     );
-  }, [user]);
+  }, [user?.id]);
 
   const fetchUnreadCounts = useCallback(async () => {
     if (!user) return;
@@ -230,7 +230,7 @@ const FriendsOverlay = () => {
         sender: profileMap.get(i.sender_id) || { username: "Unknown", avatar_url: null },
       }))
     );
-  }, [user]);
+  }, [user?.id]);
 
   // Delay initial fetch to avoid token refresh storm on login
   useEffect(() => {
@@ -241,7 +241,7 @@ const FriendsOverlay = () => {
       fetchGameInvites();
     }, 2000);
     return () => clearTimeout(timeout);
-  }, [user, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
+  }, [user?.id, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
   useEffect(() => {
     if (user && open) {
@@ -291,7 +291,7 @@ const FriendsOverlay = () => {
       clearTimeout(timeout);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [user, activeChatFriend, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
+  }, [user?.id, activeChatFriend, fetchFriendships, fetchUnreadCounts, fetchGameInvites]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
