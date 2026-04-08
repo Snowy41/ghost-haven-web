@@ -200,7 +200,8 @@ const FriendsOverlay = () => {
       counts.set(m.sender_id, (counts.get(m.sender_id) || 0) + 1);
     });
     setUnreadCounts(counts);
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchGameInvites = useCallback(async () => {
     if (!user) return;
