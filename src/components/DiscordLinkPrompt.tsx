@@ -47,7 +47,7 @@ const DiscordLinkPrompt = () => {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem(dismissKey, "1");
+    if (user) sessionStorage.setItem(`discord_prompt_dismissed_${user.id}`, "1");
   };
 
   return (
