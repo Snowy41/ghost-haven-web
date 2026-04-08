@@ -66,15 +66,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isOwnerOrAdmin = roles.includes("owner") || roles.includes("admin");
 
   useEffect(() => {
+    let isMounted = true;
+    let initialSessionHandled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
-          }, 0);
+          // Avoid double-fetch: skip if getSession already handled this
+          if (!initialSessionHandled) {
+            initialSessionHandled = true;
+            setTimeout(() => {
+              if (isMounted) {
+                fetchProfile(session.user.id);
+                fetchRoles(session.user.id);
+              }
+            }, 0);
+          }
         } else {
           setProfile(null);
           setRoles([]);
@@ -84,16 +94,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
+      if (session?.user && !initialSessionHandled) {
+        initialSessionHandled = true;
         fetchProfile(session.user.id);
         fetchRoles(session.user.id);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, username: string) => {
