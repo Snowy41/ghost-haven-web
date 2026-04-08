@@ -67,25 +67,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
-    let initialSessionHandled = false;
+    let lastUserId: string | null = null;
+
+    const loadUserData = (userId: string) => {
+      if (!isMounted) return;
+      // Only refetch if the user actually changed
+      if (userId === lastUserId) return;
+      lastUserId = userId;
+      fetchProfile(userId);
+      fetchRoles(userId);
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Avoid double-fetch: skip if getSession already handled this
-          if (!initialSessionHandled) {
-            initialSessionHandled = true;
-            setTimeout(() => {
-              if (isMounted) {
-                fetchProfile(session.user.id);
-                fetchRoles(session.user.id);
-              }
-            }, 0);
-          }
+          // Use setTimeout to avoid blocking the auth state change handler
+          setTimeout(() => loadUserData(session.user.id), 0);
         } else {
+          lastUserId = null;
           setProfile(null);
           setRoles([]);
         }
@@ -97,10 +99,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user && !initialSessionHandled) {
-        initialSessionHandled = true;
-        fetchProfile(session.user.id);
-        fetchRoles(session.user.id);
+      if (session?.user) {
+        loadUserData(session.user.id);
       }
       setLoading(false);
     });
