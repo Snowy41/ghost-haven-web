@@ -321,7 +321,123 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    return json({ error: "Invalid action. Use: list, pending, add, accept, remove, heartbeat, invite, invites, invite_respond" }, 400);
+    // ─── SEND_MESSAGE: Send a text message to a friend ────────────
+    if (action === "send_message") {
+      const { receiver_id, content } = body;
+      if (!receiver_id) return json({ error: "receiver_id required" }, 400);
+      if (!content || typeof content !== "string" || !content.trim()) {
+        return json({ error: "content required" }, 400);
+      }
+
+      const { data: friendship } = await supabaseAdmin
+        .from("friendships")
+        .select("id")
+        .eq("status", "accepted")
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${receiver_id}),and(requester_id.eq.${receiver_id},addressee_id.eq.${userId})`
+        )
+        .maybeSingle();
+
+      if (!friendship) return json({ error: "Not friends" }, 403);
+
+      const { error } = await supabaseAdmin.from("messages").insert({
+        sender_id: userId,
+        receiver_id,
+        content: content.trim(),
+      });
+
+      if (error) return json({ error: "Failed to send message" }, 500);
+      return json({ success: true });
+    }
+
+    // ─── MESSAGES: Get conversation (messages + invites merged) ───
+    if (action === "messages") {
+      const { friend_id } = body;
+      if (!friend_id) return json({ error: "friend_id required" }, 400);
+
+      const [msgsRes, invitesRes] = await Promise.all([
+        supabaseAdmin
+          .from("messages")
+          .select("id, sender_id, receiver_id, content, read, created_at")
+          .or(
+            `and(sender_id.eq.${userId},receiver_id.eq.${friend_id}),and(sender_id.eq.${friend_id},receiver_id.eq.${userId})`
+          )
+          .order("created_at", { ascending: true }),
+        supabaseAdmin
+          .from("game_invites")
+          .select("id, sender_id, receiver_id, server_ip, message, status, created_at")
+          .or(
+            `and(sender_id.eq.${userId},receiver_id.eq.${friend_id}),and(sender_id.eq.${friend_id},receiver_id.eq.${userId})`
+          )
+          .order("created_at", { ascending: true }),
+      ]);
+
+      const msgs = msgsRes.data || [];
+      const invites = invitesRes.data || [];
+
+      const allSenderIds = [
+        ...new Set([
+          ...msgs.map((m: any) => m.sender_id),
+          ...invites.map((i: any) => i.sender_id),
+        ]),
+      ];
+
+      let profiles: any[] = [];
+      if (allSenderIds.length > 0) {
+        const { data } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id, username, avatar_url")
+          .in("user_id", allSenderIds);
+        profiles = data || [];
+      }
+      const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+
+      const timeline = [
+        ...msgs.map((m: any) => ({
+          id: m.id,
+          type: "message" as const,
+          sender_id: m.sender_id,
+          receiver_id: m.receiver_id,
+          content: m.content,
+          read: m.read,
+          created_at: m.created_at,
+          sender: profileMap.get(m.sender_id) || { username: "Unknown" },
+        })),
+        ...invites.map((i: any) => ({
+          id: i.id,
+          type: "invite" as const,
+          sender_id: i.sender_id,
+          receiver_id: i.receiver_id,
+          server_ip: i.server_ip,
+          message: i.message,
+          status: i.status,
+          created_at: i.created_at,
+          sender: profileMap.get(i.sender_id) || { username: "Unknown" },
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      return json({ timeline, user_id: userId });
+    }
+
+    // ─── MARK_READ: Mark messages from a friend as read ───────────
+    if (action === "mark_read") {
+      const { friend_id } = body;
+      if (!friend_id) return json({ error: "friend_id required" }, 400);
+
+      await supabaseAdmin
+        .from("messages")
+        .update({ read: true })
+        .eq("sender_id", friend_id)
+        .eq("receiver_id", userId)
+        .eq("read", false);
+
+      return json({ success: true });
+    }
+
+    return json({ error: "Invalid action. Use: list, pending, add, accept, remove, heartbeat, invite, invites, invite_respond, send_message, messages, mark_read" }, 400);
   } catch (_err) {
     return json({ error: "Internal server error" }, 500);
   }
