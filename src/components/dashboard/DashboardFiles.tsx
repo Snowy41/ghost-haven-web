@@ -15,7 +15,8 @@ interface FileSlot {
 const FILE_SLOTS: FileSlot[] = [
   { label: "Injector (injector.exe)", storagePath: "client/injector.exe", description: "Beta injector executable", accept: ".exe" },
   { label: "Client DLL (hades.dll)", storagePath: "client/hades.dll", description: "Premium client DLL", accept: ".dll" },
-  { label: "Client JAR (hades.jar)", storagePath: "client/hades.jar", description: "Java module loaded by DLL", accept: ".jar" },
+  { label: "Client JAR (hades.jar)", storagePath: "client/hades.jar", description: "Production JAR — served to all subscribers", accept: ".jar" },
+  { label: "Dev Client JAR (hades-dev.jar)", storagePath: "client/hades-dev.jar", description: "Development branch JAR — moderator+ only", accept: ".jar" },
 ];
 
 const DashboardFiles = () => {
