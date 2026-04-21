@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.launcher-jar-fetch]
 verify_jwt = false
 
+[functions.launcher-jar-fetch-dev]
+verify_jwt = false
+
 [functions.launcher-profile]
 verify_jwt = false
 
