@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { FaDiscord } from "react-icons/fa";
 import hadesLogo from "@/assets/logo.png";
+import { useDiscordInvite } from "@/hooks/useDiscordInvite";
 
 const Footer = () => {
+  const discordUrl = useDiscordInvite();
   return (
     <footer className="border-t border-border/30 bg-card/30">
       <div className="container mx-auto px-4 py-12">
@@ -54,7 +56,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Hades Client. All rights reserved.
           </p>
           <a
-            href="https://discord.gg/hades"
+            href={discordUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-semibold"
