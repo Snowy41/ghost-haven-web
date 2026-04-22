@@ -59,7 +59,7 @@ const Dashboard = () => {
           </div>
 
           <Tabs defaultValue="stats">
-            <TabsList className="bg-secondary/50 flex-wrap">
+            <TabsList className="bg-secondary/50 w-full flex flex-wrap h-auto justify-start">
               <TabsTrigger value="stats">Statistics</TabsTrigger>
               <TabsTrigger value="keys">Invite Keys</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
