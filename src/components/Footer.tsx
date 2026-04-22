@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FaDiscord } from "react-icons/fa";
+import { MessageCircle } from "lucide-react";
 import hadesLogo from "@/assets/logo.png";
 import { useDiscordInvite } from "@/hooks/useDiscordInvite";
 
@@ -62,7 +62,7 @@ const Footer = () => {
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-semibold"
             aria-label="Join our Discord support server"
           >
-            <FaDiscord className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             Discord Support
           </a>
         </div>
