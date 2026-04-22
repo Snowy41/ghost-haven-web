@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Github, MessageCircle } from "lucide-react";
+import { FaDiscord } from "react-icons/fa";
 import hadesLogo from "@/assets/logo.png";
 
 const Footer = () => {
@@ -53,14 +53,16 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Hades Client. All rights reserved.
           </p>
-          <div className="flex items-center gap-3">
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Discord">
-              <MessageCircle className="h-4 w-4" />
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="GitHub">
-              <Github className="h-4 w-4" />
-            </a>
-          </div>
+          <a
+            href="https://discord.gg/hades"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-semibold"
+            aria-label="Join our Discord support server"
+          >
+            <FaDiscord className="h-4 w-4" />
+            Discord Support
+          </a>
         </div>
       </div>
     </footer>
