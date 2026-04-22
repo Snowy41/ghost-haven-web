@@ -38,22 +38,29 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-display text-xs font-semibold uppercase tracking-wider text-foreground mb-4">Community</h4>
-            <div className="flex items-center gap-3 mt-2">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <MessageCircle className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Github className="h-5 w-5" />
-              </a>
+            <h4 className="font-display text-xs font-semibold uppercase tracking-wider text-foreground mb-4">Legal</h4>
+            <div className="flex flex-col gap-2">
+              <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link>
+              <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+              <Link to="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
+              <Link to="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors">Cookie Policy</Link>
+              <Link to="/agb" className="text-sm text-muted-foreground hover:text-primary transition-colors">AGB</Link>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-border/30 mt-8 pt-6 text-center">
+        <div className="border-t border-border/30 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Hades Client. All rights reserved.
           </p>
+          <div className="flex items-center gap-3">
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Discord">
+              <MessageCircle className="h-4 w-4" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="GitHub">
+              <Github className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
