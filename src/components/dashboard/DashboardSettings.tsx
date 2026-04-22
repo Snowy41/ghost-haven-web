@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, Activity, FlaskConical } from "lucide-react";
-import { FaDiscord } from "react-icons/fa";
+import { Settings, Activity, FlaskConical, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -132,7 +131,7 @@ const DashboardSettings = () => {
 
         <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <FaDiscord className="h-5 w-5 text-primary shrink-0" />
+            <MessageCircle className="h-5 w-5 text-primary shrink-0" />
             <div className="min-w-0">
               <Label className="text-foreground font-medium">Discord Invite Link</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
