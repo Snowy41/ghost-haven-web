@@ -13,9 +13,9 @@ import SEOHead from "@/components/SEOHead";
 
 const features = [
   { text: "All modules (100+)", icon: Crosshair },
-  { text: "Ghost injection", icon: Ghost },
+  { text: "LabyMod v4 injection", icon: Ghost },
   { text: "Bypass engine", icon: Shield },
-  { text: "Stealth mode", icon: Zap },
+  { text: "Rage features", icon: Zap },
   { text: "Community configs", icon: Star },
   { text: "Priority support", icon: Check },
 ];
@@ -23,7 +23,7 @@ const features = [
 const faqItems = [
   {
     q: "What's included in Premium?",
-    a: "Full access to every module (100+), the bypass engine, stealth mode, ghost injection, all community configs from the marketplace, and priority support from our team.",
+    a: "Full access to every module (100+), the bypass engine, all rage features, LabyMod v4 injection, all community configs from the marketplace, and priority support from our team.",
   },
   {
     q: "How do I get an invite key?",
@@ -39,7 +39,7 @@ const faqItems = [
   },
   {
     q: "Is the injector safe to use?",
-    a: "The injector is designed with a multi-layer bypass engine and stealth mode to minimize detection. We continuously update our bypass methods.",
+    a: "Hades injects into LabyMod v4 with a multi-layer bypass engine designed to minimize detection. We continuously update our bypass methods.",
   },
 ];
 
@@ -169,8 +169,8 @@ const Download = () => {
   return (
     <div className="min-h-screen bg-background relative">
       <SEOHead
-        title="Download Minecraft Cheat — Hades Client"
-        description="Download the Hades undetected Minecraft cheat. Free injector or Premium with 100+ hack modules, anti-cheat bypass, and ghost injection for €10/month."
+        title="Download LabyMod v4 Injection Client — Hades"
+        description="Download Hades, the LabyMod v4 injection client. Free injector or Premium with 100+ modules, rage features, and powerful bypasses for €10/month."
         path="/download"
       />
       <Navbar />
@@ -365,7 +365,7 @@ const Download = () => {
                 <h2 className="font-display text-2xl sm:text-3xl font-bold mb-3">
                   See It <span className="gradient-hades-text">In Action</span>
                 </h2>
-                <p className="text-muted-foreground">Watch Hades dominate on every server.</p>
+                <p className="text-muted-foreground">Watch Hades rage through every server with LabyMod v4.</p>
               </div>
 
               {showcaseImages.length > 0 ? (

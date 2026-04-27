@@ -28,7 +28,7 @@ const CTASection = () => {
           Ready to <span className="gradient-hades-text">Dominate</span>?
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-8">
-          Join thousands of players using the best undetected Minecraft cheat. Get started in under 60 seconds.
+          Join thousands of players using the top LabyMod v4 injection client. Get started in under 60 seconds.
         </p>
         <Link to="/download">
           <motion.div

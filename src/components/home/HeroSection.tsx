@@ -60,9 +60,9 @@ const HeroSection = () => {
           </h1>
 
           <p className="max-w-xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 leading-relaxed">
-            The best undetected <strong>Minecraft cheat</strong> with <strong>ghost injection</strong>.
+            The ultimate <strong>injection client</strong> for <strong>LabyMod v4</strong>.
             <br className="hidden sm:block" />
-            <strong>Bypass</strong> every anti-cheat. Stay invisible.
+            Loaded with <strong>rage features</strong> and powerful <strong>bypasses</strong>.
           </p>
 
           {/* CTA Buttons */}

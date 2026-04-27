@@ -16,7 +16,7 @@ const Footer = () => {
               <span className="font-display text-lg font-bold gradient-hades-text tracking-widest">HADES</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              The ultimate ghost injection client. Undetected. Unstoppable.
+              The ultimate LabyMod v4 injection client. Rage features. Powerful bypasses.
             </p>
           </div>
 
