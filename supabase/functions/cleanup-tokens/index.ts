@@ -33,6 +33,9 @@ Deno.serve(async (req) => {
     // Clean up expired/revoked session tokens
     await supabaseAdmin.rpc("cleanup_session_tokens");
 
+    // Clean up old rate-limit log entries
+    await supabaseAdmin.rpc("cleanup_rate_limit_log");
+
     return new Response(JSON.stringify({ success: true, cleaned_at: new Date().toISOString() }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

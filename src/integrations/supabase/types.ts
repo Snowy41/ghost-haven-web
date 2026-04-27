@@ -454,6 +454,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: number
+          identifier: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: number
+          identifier: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: number
+          identifier?: string
+        }
+        Relationships: []
+      }
       session_tokens: {
         Row: {
           created_at: string
@@ -729,6 +750,20 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_identifier: string
+          p_max_attempts: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after_seconds: number
+        }[]
+      }
+      cleanup_rate_limit_log: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

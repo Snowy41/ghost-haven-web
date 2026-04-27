@@ -1,25 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit, getClientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Simple in-memory rate limiter
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 3; // max registration attempts
-const RATE_WINDOW = 300_000; // per 5 minutes
-
-function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(key);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + RATE_WINDOW });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -27,11 +12,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    if (isRateLimited(`register:${clientIp}`)) {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // DB-backed rate limit: 3 registrations per 5 min per IP
+    const clientIp = getClientIp(req);
+    const rl = await rateLimit(supabaseAdmin, `register:${clientIp}`, "launcher-register", 3, 300);
+    if (!rl.allowed) {
       return new Response(JSON.stringify({ error: "Too many attempts. Try again in a few minutes." }), {
         status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "300" },
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) },
       });
     }
 
@@ -68,11 +60,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Check invite key
     const { data: keyData } = await supabaseAdmin
