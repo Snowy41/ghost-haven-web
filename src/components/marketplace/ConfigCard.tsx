@@ -113,7 +113,7 @@ const ConfigCard = ({ config, isPurchased, onPurchased }: ConfigCardProps) => {
           </span>
         </div>
         {canDownload ? (
-          <Button size="sm" className="gradient-hades text-xs" onClick={handleDownload} disabled={!config.file_path}>
+          <Button size="sm" className="gradient-hades text-xs" onClick={handleDownload} disabled={!config.has_file}>
             Download
           </Button>
         ) : (
