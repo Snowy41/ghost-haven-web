@@ -150,16 +150,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        discord_id: discordUser.id,
-        discord_username: discordUser.username,
-        discord_avatar: discordUser.avatar,
-      })
-      .eq("user_id", user_id);
+    const [pubRes, privRes] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .update({ discord_username: discordUser.username })
+        .eq("user_id", user_id),
+      supabaseAdmin
+        .from("profiles_private")
+        .upsert({
+          user_id,
+          discord_id: discordUser.id,
+          discord_avatar: discordUser.avatar,
+        }, { onConflict: "user_id" }),
+    ]);
 
-    if (error) throw new Error("Failed to save Discord info");
+    if (pubRes.error || privRes.error) throw new Error("Failed to save Discord info");
 
     return new Response(null, {
       status: 302,
