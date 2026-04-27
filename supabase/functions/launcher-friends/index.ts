@@ -208,6 +208,20 @@ Deno.serve(async (req) => {
       const validStatuses = ["website", "launcher", "client"];
       const finalStatus = validStatuses.includes(presenceStatus) ? presenceStatus : "launcher";
 
+      // Validate server_ip: simple IPv4 with optional port, max 22 chars
+      const IP_REGEX = /^[\d.]{7,15}(:\d{1,5})?$/;
+      if (server_ip != null) {
+        if (typeof server_ip !== "string" || server_ip.length > 22 || !IP_REGEX.test(server_ip)) {
+          return json({ error: "Invalid server_ip" }, 400);
+        }
+      }
+      // Validate activity length
+      if (activity != null) {
+        if (typeof activity !== "string" || activity.length > 100) {
+          return json({ error: "activity too long (max 100 chars)" }, 400);
+        }
+      }
+
       const { data: existing } = await supabaseAdmin
         .from("user_presence")
         .select("id")
@@ -327,6 +341,9 @@ Deno.serve(async (req) => {
       if (!receiver_id) return json({ error: "receiver_id required" }, 400);
       if (!content || typeof content !== "string" || !content.trim()) {
         return json({ error: "content required" }, 400);
+      }
+      if (content.length > 2000) {
+        return json({ error: "Message too long (max 2000 chars)" }, 400);
       }
 
       const { data: friendship } = await supabaseAdmin
