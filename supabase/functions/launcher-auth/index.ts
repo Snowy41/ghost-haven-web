@@ -1,25 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit, getClientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Simple in-memory rate limiter (per edge function instance)
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 5; // max attempts
-const RATE_WINDOW = 60_000; // per 60 seconds
-
-function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(key);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + RATE_WINDOW });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -27,12 +12,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Rate limit by IP
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    if (isRateLimited(`auth:${clientIp}`)) {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // DB-backed rate limit by IP: 5 attempts / 60s
+    const clientIp = getClientIp(req);
+    const rl = await rateLimit(supabaseAdmin, `auth:${clientIp}`, "launcher-auth", 5, 60);
+    if (!rl.allowed) {
       return new Response(JSON.stringify({ error: "Too many attempts. Try again later." }), {
         status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" },
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) },
       });
     }
 
@@ -69,11 +60,6 @@ Deno.serve(async (req) => {
     }
 
     // Check if user is banned
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const { data: profile } = await supabaseAdmin
       .from("profiles_private")
       .select("banned_at")
