@@ -46,17 +46,17 @@ const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Title with logo as H */}
-          <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight mb-6 flex items-center justify-center">
+          {/* Title with logo beside full HADES wordmark */}
+          <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight mb-6 flex items-center justify-center gap-4 sm:gap-6">
             <motion.img
               src={hadesLogo}
               alt=""
-              className="h-[1em] w-auto drop-shadow-[0_0_25px_hsl(348,80%,50%/0.6)] -mr-[0.08em]"
+              className="h-[0.9em] w-auto drop-shadow-[0_0_25px_hsl(348,80%,50%/0.6)]"
               initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             />
-            <span className="gradient-hades-text glow-text text-[0.82em] tracking-[0.02em]">ADES</span>
+            <span className="gradient-hades-text glow-text tracking-[0.02em]">HADES</span>
           </h1>
 
           <p className="max-w-xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 leading-relaxed">
