@@ -11,7 +11,7 @@ const features = [
   {
     icon: Shield,
     title: "Bypass Engine",
-    description: "Powerful bypasses tuned for modern anti-cheats so your rage modules land clean.",
+    description: "Powerful bypasses tuned for modern anti-cheats — including Polar AntiCheat — so your rage modules land clean.",
   },
   {
     icon: Zap,
