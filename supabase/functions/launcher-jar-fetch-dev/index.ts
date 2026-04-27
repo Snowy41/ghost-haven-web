@@ -54,11 +54,11 @@ Deno.serve(async (req) => {
     const { action, token } = body;
 
     if (action === "request_token") {
-      // Dev branch: requires moderator or higher (moderator/admin/owner)
-      const role = await checkMinRole(supabaseAdmin, user.id, "moderator");
+      // Dev branch: owner-only access
+      const role = await checkMinRole(supabaseAdmin, user.id, "owner");
       if (!role.allowed) {
         return new Response(
-          JSON.stringify({ error: "Dev branch access requires moderator role or higher" }),
+          JSON.stringify({ error: "Dev branch access requires owner role" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -91,11 +91,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Re-verify role on download too (defense in depth)
-      const role = await checkMinRole(supabaseAdmin, user.id, "moderator");
+      // Re-verify owner on download (defense in depth)
+      const role = await checkMinRole(supabaseAdmin, user.id, "owner");
       if (!role.allowed) {
         return new Response(
-          JSON.stringify({ error: "Dev branch access requires moderator role or higher" }),
+          JSON.stringify({ error: "Dev branch access requires owner role" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
