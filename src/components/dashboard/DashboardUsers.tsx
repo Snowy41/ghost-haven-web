@@ -51,7 +51,7 @@ const DashboardUsers = () => {
 
   const toggleBan = async (userId: string, isBanned: boolean) => {
     const { error } = await supabase
-      .from("profiles")
+      .from("profiles_private")
       .update({ banned_at: isBanned ? null : new Date().toISOString() } as any)
       .eq("user_id", userId);
     if (error) {
