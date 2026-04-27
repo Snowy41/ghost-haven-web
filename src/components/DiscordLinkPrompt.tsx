@@ -18,7 +18,7 @@ const DiscordLinkPrompt = () => {
     return false;
   });
 
-  const discordLinked = !!(profile as any)?.discord_id;
+  const discordLinked = !!(profile as any)?.discord_username;
 
   // Check sessionStorage dismissal in effect, not during render
   useEffect(() => {

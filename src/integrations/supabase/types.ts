@@ -145,6 +145,13 @@ export type Database = {
             referencedRelation: "configs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "config_purchases_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "configs_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       config_ratings: {
@@ -175,6 +182,13 @@ export type Database = {
             columns: ["config_id"]
             isOneToOne: false
             referencedRelation: "configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "config_ratings_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "configs_public"
             referencedColumns: ["id"]
           },
         ]
@@ -371,16 +385,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          banned_at: string | null
           banner_position: string | null
           banner_url: string | null
           created_at: string
           description: string | null
-          discord_avatar: string | null
-          discord_id: string | null
           discord_username: string | null
           hades_coins: number
-          hwid: string | null
           id: string
           updated_at: string
           user_id: string
@@ -388,16 +398,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          banned_at?: string | null
           banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null
-          discord_avatar?: string | null
-          discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
-          hwid?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -405,20 +411,46 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          banned_at?: string | null
           banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null
-          discord_avatar?: string | null
-          discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
-          hwid?: string | null
           id?: string
           updated_at?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      profiles_private: {
+        Row: {
+          banned_at: string | null
+          created_at: string
+          discord_avatar: string | null
+          discord_id: string | null
+          hwid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          created_at?: string
+          discord_avatar?: string | null
+          discord_id?: string | null
+          hwid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          created_at?: string
+          discord_avatar?: string | null
+          discord_id?: string | null
+          hwid?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -616,11 +648,87 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      configs_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          downloads: number | null
+          file_path: string | null
+          id: string | null
+          is_official: boolean | null
+          name: string | null
+          price: number | null
+          rating: number | null
+          rating_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          downloads?: number | null
+          file_path?: never
+          id?: string | null
+          is_official?: boolean | null
+          name?: string | null
+          price?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          downloads?: number | null
+          file_path?: never
+          id?: string | null
+          is_official?: boolean | null
+          name?: string | null
+          price?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_presence_public: {
+        Row: {
+          activity: string | null
+          id: string | null
+          last_seen: string | null
+          server_ip: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity?: string | null
+          id?: string | null
+          last_seen?: string | null
+          server_ip?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity?: string | null
+          id?: string | null
+          last_seen?: string | null
+          server_ip?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      cleanup_download_tokens: { Args: never; Returns: undefined }
-      cleanup_session_tokens: { Args: never; Returns: undefined }
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -629,7 +737,6 @@ export type Database = {
         Returns: boolean
       }
       purchase_config: { Args: { p_config_id: string }; Returns: undefined }
-      scheduled_cleanup: { Args: never; Returns: undefined }
       validate_and_use_invite_key: {
         Args: { p_key: string; p_user_id: string }
         Returns: boolean

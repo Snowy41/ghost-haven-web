@@ -20,8 +20,9 @@ const DashboardStats = () => {
   });
 
   const fetchStats = useCallback(async () => {
-    const [usersRes, configsRes, subsRes, keysRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, banned_at"),
+    const [usersRes, bannedRes, configsRes, subsRes, keysRes] = await Promise.all([
+      supabase.from("profiles").select("user_id"),
+      supabase.from("profiles_private").select("user_id").not("banned_at", "is", null),
       supabase.from("configs").select("downloads"),
       supabase.from("subscriptions").select("status").eq("status", "active"),
       supabase.from("invite_keys").select("is_used"),
@@ -33,7 +34,7 @@ const DashboardStats = () => {
 
     setStats({
       totalUsers: users.length,
-      bannedUsers: users.filter((u) => u.banned_at).length,
+      bannedUsers: (bannedRes.data || []).length,
       totalConfigs: configs.length,
       totalDownloads: configs.reduce((sum, c) => sum + (c.downloads || 0), 0),
       activeSubs: (subsRes.data || []).length,

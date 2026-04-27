@@ -40,11 +40,18 @@ Deno.serve(async (req) => {
     }
 
     // Check if banned
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id, username, avatar_url, description, hades_coins, created_at, banned_at")
-      .eq("user_id", user.id)
-      .single();
+    const [{ data: profile }, { data: priv }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("user_id, username, avatar_url, description, hades_coins, created_at")
+        .eq("user_id", user.id)
+        .single(),
+      supabaseAdmin
+        .from("profiles_private")
+        .select("banned_at")
+        .eq("user_id", user.id)
+        .single(),
+    ]);
 
     if (!profile) {
       return new Response(JSON.stringify({ error: "Profile not found" }), {
@@ -53,8 +60,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (profile.banned_at) {
-      return new Response(JSON.stringify({ error: "Account banned", banned_at: profile.banned_at }), {
+    if (priv?.banned_at) {
+      return new Response(JSON.stringify({ error: "Account banned", banned_at: priv.banned_at }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

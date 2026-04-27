@@ -26,11 +26,22 @@ const DashboardUsers = () => {
   const [roles, setRoles] = useState<RoleRow[]>([]);
 
   const fetchData = useCallback(async () => {
-    const [usersRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, username, hades_coins, created_at, banned_at").order("created_at", { ascending: false }).limit(200),
+    const [usersRes, privateRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("user_id, username, hades_coins, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("profiles_private").select("user_id, banned_at"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
-    setUsers((usersRes.data as UserRow[]) || []);
+    const banMap = new Map<string, string | null>(
+      ((privateRes.data as any[]) || []).map((p) => [p.user_id, p.banned_at])
+    );
+    const merged: UserRow[] = ((usersRes.data as any[]) || []).map((u) => ({
+      user_id: u.user_id,
+      username: u.username,
+      hades_coins: u.hades_coins,
+      created_at: u.created_at,
+      banned_at: banMap.get(u.user_id) ?? null,
+    }));
+    setUsers(merged);
     setRoles((rolesRes.data as RoleRow[]) || []);
   }, []);
 
@@ -40,7 +51,7 @@ const DashboardUsers = () => {
 
   const toggleBan = async (userId: string, isBanned: boolean) => {
     const { error } = await supabase
-      .from("profiles")
+      .from("profiles_private")
       .update({ banned_at: isBanned ? null : new Date().toISOString() } as any)
       .eq("user_id", userId);
     if (error) {
