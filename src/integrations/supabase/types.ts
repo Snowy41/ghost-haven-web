@@ -616,9 +616,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          banner_position: string | null
+          banner_url: string | null
+          created_at: string | null
+          description: string | null
+          discord_avatar: string | null
+          discord_username: string | null
+          hades_coins: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_position?: string | null
+          banner_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          discord_avatar?: string | null
+          discord_username?: string | null
+          hades_coins?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_position?: string | null
+          banner_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          discord_avatar?: string | null
+          discord_username?: string | null
+          hades_coins?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_presence_public: {
+        Row: {
+          activity: string | null
+          id: string | null
+          last_seen: string | null
+          server_ip: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity?: string | null
+          id?: string | null
+          last_seen?: string | null
+          server_ip?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity?: string | null
+          id?: string | null
+          last_seen?: string | null
+          server_ip?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
       cleanup_download_tokens: { Args: never; Returns: undefined }
       cleanup_session_tokens: { Args: never; Returns: undefined }
       has_role: {
