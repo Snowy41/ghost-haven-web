@@ -5,28 +5,28 @@ import TiltCard from "@/components/TiltCard";
 const features = [
   {
     icon: Ghost,
-    title: "Ghost Injection",
-    description: "Seamless injection that leaves zero traces. Completely invisible to anti-cheat systems.",
+    title: "LabyMod v4 Injection",
+    description: "Purpose-built injection client for LabyMod v4. Seamless integration with the LabyMod ecosystem.",
   },
   {
     icon: Shield,
     title: "Bypass Engine",
-    description: "Advanced bypass technology for all major anti-cheat systems including Watchdog & Vulcan.",
+    description: "Powerful bypasses tuned for modern anti-cheats so your rage modules land clean.",
   },
   {
     icon: Zap,
-    title: "Lightning Fast",
-    description: "Optimized for minimal performance impact. No FPS drops, no lag spikes.",
+    title: "Rage Features",
+    description: "Aggressive killaura, reach, hitboxes, and combat modules built for rage gameplay.",
   },
   {
     icon: Eye,
-    title: "Stealth Mode",
-    description: "Render yourself invisible to screenshare tools and recording software.",
+    title: "Performance Tuned",
+    description: "Optimized to run smoothly inside LabyMod v4. No FPS drops, no lag spikes.",
   },
   {
     icon: Layers,
     title: "Module System",
-    description: "Over 100+ modules with deep customization. Build your perfect setup.",
+    description: "Over 100+ modules with deep customization. Build your perfect rage setup.",
   },
   {
     icon: Settings,
@@ -56,10 +56,10 @@ const FeaturesSection = () => {
           className="text-center mb-16"
         >
           <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-            Why Choose <span className="gradient-hades-text">HADES</span> Cheat?
+            Why Choose <span className="gradient-hades-text">HADES</span>?
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Built for undetected Minecraft cheating — stealth, bypass, and performance.
+            The injection client built for LabyMod v4 — rage, bypasses, and performance.
           </p>
         </motion.div>
 
