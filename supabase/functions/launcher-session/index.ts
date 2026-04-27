@@ -101,20 +101,27 @@ Deno.serve(async (req) => {
       if ("error" in validation) return json({ error: validation.error }, validation.status);
       const { userId, token: sessionToken } = validation;
 
-      // Fetch profile
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("user_id, username, avatar_url, description, hades_coins, created_at, banned_at")
-        .eq("user_id", userId)
-        .single();
+      // Fetch profile + private (for banned check)
+      const [{ data: profile }, { data: priv }] = await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select("user_id, username, avatar_url, description, hades_coins, created_at")
+          .eq("user_id", userId)
+          .single(),
+        supabaseAdmin
+          .from("profiles_private")
+          .select("banned_at")
+          .eq("user_id", userId)
+          .single(),
+      ]);
 
       if (!profile) return json({ error: "Profile not found" }, 404);
-      if (profile.banned_at) {
+      if (priv?.banned_at) {
         await supabaseAdmin
           .from("session_tokens")
           .update({ revoked: true })
           .eq("token", sessionToken);
-        return json({ error: "Account banned", banned_at: profile.banned_at }, 403);
+        return json({ error: "Account banned", banned_at: priv.banned_at }, 403);
       }
 
       // Use centralized access check
