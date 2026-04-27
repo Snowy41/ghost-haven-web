@@ -342,6 +342,9 @@ Deno.serve(async (req) => {
       if (!content || typeof content !== "string" || !content.trim()) {
         return json({ error: "content required" }, 400);
       }
+      if (content.length > 2000) {
+        return json({ error: "Message too long (max 2000 chars)" }, 400);
+      }
 
       const { data: friendship } = await supabaseAdmin
         .from("friendships")
