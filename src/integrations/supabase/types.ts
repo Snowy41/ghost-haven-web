@@ -145,6 +145,13 @@ export type Database = {
             referencedRelation: "configs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "config_purchases_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "configs_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       config_ratings: {
@@ -175,6 +182,13 @@ export type Database = {
             columns: ["config_id"]
             isOneToOne: false
             referencedRelation: "configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "config_ratings_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "configs_public"
             referencedColumns: ["id"]
           },
         ]
@@ -616,6 +630,54 @@ export type Database = {
       }
     }
     Views: {
+      configs_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          downloads: number | null
+          file_path: string | null
+          id: string | null
+          is_official: boolean | null
+          name: string | null
+          price: number | null
+          rating: number | null
+          rating_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          downloads?: number | null
+          file_path?: never
+          id?: string | null
+          is_official?: boolean | null
+          name?: string | null
+          price?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          downloads?: number | null
+          file_path?: never
+          id?: string | null
+          is_official?: boolean | null
+          name?: string | null
+          price?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
