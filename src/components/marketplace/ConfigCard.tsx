@@ -55,8 +55,8 @@ const ConfigCard = ({ config, isPurchased, onPurchased }: ConfigCardProps) => {
   };
 
   const handleDownload = async () => {
-    if (!config.file_path) return;
-    
+    if (!config.has_file) return;
+
     // For free configs not yet "purchased", record the download
     if (config.price === 0 && !isPurchased && !isOwner) {
       try {
@@ -67,17 +67,18 @@ const ConfigCard = ({ config, isPurchased, onPurchased }: ConfigCardProps) => {
       }
     }
 
-    const { data, error } = await supabase.storage.from("configs").download(config.file_path);
-    if (error || !data) {
+    // Use signed-URL edge function instead of direct storage access
+    const { data, error } = await supabase.functions.invoke("launcher-config-download", {
+      body: { config_id: config.id },
+    });
+    if (error || !data?.url) {
       toast({ title: "Download failed", description: "Could not download config file.", variant: "destructive" });
       return;
     }
-    const url = URL.createObjectURL(data);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = config.file_path.split("/").pop() || "config";
+    a.href = data.url;
+    a.download = data.filename || "config";
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
