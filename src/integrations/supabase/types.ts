@@ -688,8 +688,6 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
-      cleanup_download_tokens: { Args: never; Returns: undefined }
-      cleanup_session_tokens: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -698,7 +696,6 @@ export type Database = {
         Returns: boolean
       }
       purchase_config: { Args: { p_config_id: string }; Returns: undefined }
-      scheduled_cleanup: { Args: never; Returns: undefined }
       validate_and_use_invite_key: {
         Args: { p_key: string; p_user_id: string }
         Returns: boolean
