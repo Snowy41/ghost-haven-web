@@ -44,10 +44,11 @@ const DiscordLink = () => {
   const handleUnlink = async () => {
     if (!user) return;
     setUnlinking(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ discord_id: null, discord_username: null, discord_avatar: null } as any)
-      .eq("user_id", user.id);
+    const [{ error: pubErr }, { error: privErr }] = await Promise.all([
+      supabase.from("profiles").update({ discord_username: null } as any).eq("user_id", user.id),
+      supabase.from("profiles_private").update({ discord_id: null, discord_avatar: null } as any).eq("user_id", user.id),
+    ]);
+    const error = pubErr || privErr;
 
     if (error) {
       toast({ title: "Error", description: "Failed to unlink Discord.", variant: "destructive" });
