@@ -385,16 +385,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          banned_at: string | null
           banner_position: string | null
           banner_url: string | null
           created_at: string
           description: string | null
-          discord_avatar: string | null
-          discord_id: string | null
           discord_username: string | null
           hades_coins: number
-          hwid: string | null
           id: string
           updated_at: string
           user_id: string
@@ -402,16 +398,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          banned_at?: string | null
           banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null
-          discord_avatar?: string | null
-          discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
-          hwid?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -419,20 +411,46 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          banned_at?: string | null
           banner_position?: string | null
           banner_url?: string | null
           created_at?: string
           description?: string | null
-          discord_avatar?: string | null
-          discord_id?: string | null
           discord_username?: string | null
           hades_coins?: number
-          hwid?: string | null
           id?: string
           updated_at?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      profiles_private: {
+        Row: {
+          banned_at: string | null
+          created_at: string
+          discord_avatar: string | null
+          discord_id: string | null
+          hwid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          created_at?: string
+          discord_avatar?: string | null
+          discord_id?: string | null
+          hwid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          created_at?: string
+          discord_avatar?: string | null
+          discord_id?: string | null
+          hwid?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -675,45 +693,6 @@ export type Database = {
           rating_count?: number | null
           updated_at?: string | null
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          banner_position: string | null
-          banner_url: string | null
-          created_at: string | null
-          description: string | null
-          discord_avatar: string | null
-          discord_username: string | null
-          hades_coins: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          banner_position?: string | null
-          banner_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          discord_avatar?: string | null
-          discord_username?: string | null
-          hades_coins?: number | null
-          user_id?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          banner_position?: string | null
-          banner_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          discord_avatar?: string | null
-          discord_username?: string | null
-          hades_coins?: number | null
-          user_id?: string | null
-          username?: string | null
         }
         Relationships: []
       }
