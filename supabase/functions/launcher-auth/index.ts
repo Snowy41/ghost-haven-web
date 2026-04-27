@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     );
 
     const { data: profile } = await supabaseAdmin
-      .from("profiles")
+      .from("profiles_private")
       .select("banned_at")
       .eq("user_id", data.user.id)
       .single();
