@@ -17,7 +17,6 @@ const DiscordLink = () => {
   const { toast } = useToast();
   const [unlinking, setUnlinking] = useState(false);
 
-  const discordId = (profile as any)?.discord_id;
   const discordUsername = (profile as any)?.discord_username;
 
   const handleLink = async () => {
