@@ -17,7 +17,7 @@ interface Config {
   rating: number;
   rating_count: number;
   user_id: string;
-  file_path: string | null;
+  has_file?: boolean;
   author_name?: string;
 }
 
