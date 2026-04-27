@@ -21,7 +21,7 @@ interface ConfigRow {
   category: string;
   price: number;
   is_official: boolean;
-  file_path: string | null;
+  has_file: boolean;
   downloads: number;
   rating: number;
   rating_count: number;
@@ -49,7 +49,7 @@ const Marketplace = () => {
   const fetchConfigs = useCallback(async () => {
     const { data: configsData } = await supabase
       .from("configs")
-      .select("*")
+      .select("id, user_id, name, description, category, price, is_official, downloads, rating, rating_count, created_at")
       .order("created_at", { ascending: false });
 
     if (!configsData) { setConfigs([]); setLoading(false); return; }
@@ -65,6 +65,7 @@ const Marketplace = () => {
     setConfigs(
       configsData.map((c) => ({
         ...c,
+        has_file: true,
         author_name: profileMap.get(c.user_id) || "Unknown",
       }))
     );
