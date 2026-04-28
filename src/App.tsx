@@ -9,6 +9,7 @@ import DiscordLinkPrompt from "@/components/DiscordLinkPrompt";
 import FriendsOverlay from "@/components/FriendsOverlay";
 import PageSkeleton from "@/components/PageSkeleton";
 import CookieBanner from "@/components/CookieBanner";
+import AmbientBackground from "@/components/AmbientBackground";
 
 // Lazy-loaded routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -38,6 +39,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AmbientBackground />
         <AuthProvider>
           <DiscordLinkPrompt />
           <FriendsOverlay />
