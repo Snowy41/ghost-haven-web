@@ -8,23 +8,19 @@ import { HelpCircle } from "lucide-react";
 const faqs = [
   {
     q: "What is Hades Client?",
-    a: "Hades is an injection client for LabyMod v4 with rage features and powerful bypasses, including 100+ modules tailored for competitive play.",
+    a: "Hades is a premium client for LabyMod v4 with rage features and 100+ modules built for competitive play.",
   },
   {
     q: "How do I get access?",
-    a: "Account registration requires a single-use invite key. You can obtain one by purchasing a license or being invited by an existing member through our Discord.",
+    a: "Account registration requires a single-use invite key. You can obtain one by purchasing a license or being invited through our Discord.",
   },
   {
     q: "Which Minecraft versions are supported?",
-    a: "Hades targets LabyMod v4. Check the Download page for the current list of supported Minecraft versions and the latest launcher build.",
-  },
-  {
-    q: "How does the launcher work?",
-    a: "Our launcher authenticates with your Hades account, fetches a 24-hour session token, and securely injects the client JAR into your LabyMod v4 instance.",
+    a: "Check the Download page for the current list of supported versions and the latest release.",
   },
   {
     q: "What are Hades Coins?",
-    a: "Hades Coins are the in-app currency used to purchase configs in the Marketplace and unlock cosmetic upgrades. You can earn them by sharing configs or buy them via Stripe.",
+    a: "Hades Coins are the in-app currency used to purchase configs in the Marketplace and unlock cosmetic upgrades. You can earn them by sharing configs or top up via our payment provider.",
   },
   {
     q: "Can I share or sell my configs?",
@@ -32,23 +28,23 @@ const faqs = [
   },
   {
     q: "How do I link my Discord account?",
-    a: "Open your Profile and click 'Link Discord'. Once linked, our Discord bot automatically assigns the correct role based on your purchase or invite status.",
+    a: "Open your Profile and click 'Link Discord'. Once linked, you'll automatically receive the correct role in our server.",
   },
   {
-    q: "Is Hades safe to use?",
-    a: "We use industry-standard security: rate limiting, HIBP password checks, strict row-level security on the backend, and short-lived session tokens. Never share your account credentials.",
+    q: "Is my account safe?",
+    a: "We follow modern security best practices. Use a strong, unique password and never share your credentials with anyone.",
   },
   {
     q: "What is your refund policy?",
-    a: "See our Refund Policy page for full details. In short, refunds are evaluated on a case-by-case basis depending on usage and time since purchase.",
+    a: "See our Refund Policy page for full details. Refunds are evaluated on a case-by-case basis.",
   },
   {
     q: "How do I report a bug?",
-    a: "Use the BETA Reports page in the navbar while signed in. Bug reports go directly to the admin dashboard for review.",
+    a: "Use the BETA Reports page in the navbar while signed in, or reach out on Discord.",
   },
   {
     q: "Where can I get support?",
-    a: "Join our Discord server using the link in the footer. Our team and community are active and respond quickly.",
+    a: "Join our Discord server using the link in the footer — our team and community respond quickly.",
   },
 ];
 
