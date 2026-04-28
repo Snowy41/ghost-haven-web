@@ -22,6 +22,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const BetaReports = lazy(() => import("./pages/BetaReports"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const FAQ = lazy(() => import("./pages/FAQ"));
 const Terms = lazy(() => import("./pages/legal/Terms"));
 const Privacy = lazy(() => import("./pages/legal/Privacy"));
 const Refund = lazy(() => import("./pages/legal/Refund"));
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/user/:username" element={<UserProfile />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/beta-reports" element={<BetaReports />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/refund-policy" element={<Refund />} />

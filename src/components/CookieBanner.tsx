@@ -3,7 +3,14 @@ import { Link } from "react-router-dom";
 import { Cookie, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const STORAGE_KEY = "hades_cookie_consent";
+const STORAGE_KEY = "hades_cookie_consent_v2";
+
+// Clear legacy consent so the banner re-appears for users who accepted v1
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem("hades_cookie_consent");
+  } catch {}
+}
 
 const CookieBanner = () => {
   const [visible, setVisible] = useState(false);
