@@ -277,7 +277,11 @@ Deno.serve(async (req) => {
         status: "pending",
       });
 
-      if (error) return json({ error: "Failed to send invite" }, 500);
+      if (error) {
+        if (/rate limit/i.test(error.message)) return json({ error: "Invite rate limit reached" }, 429);
+        if (/pending invite/i.test(error.message)) return json({ error: "Already have a pending invite for this friend" }, 409);
+        return json({ error: "Failed to send invite" }, 500);
+      }
       return json({ success: true });
     }
 
