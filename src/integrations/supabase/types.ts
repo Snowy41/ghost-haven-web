@@ -295,6 +295,7 @@ export type Database = {
       game_invites: {
         Row: {
           created_at: string
+          expires_at: string
           id: string
           message: string | null
           receiver_id: string
@@ -305,6 +306,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          expires_at?: string
           id?: string
           message?: string | null
           receiver_id: string
@@ -315,6 +317,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          expires_at?: string
           id?: string
           message?: string | null
           receiver_id?: string
