@@ -288,6 +288,7 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("receiver_id", userId)
         .eq("status", "pending")
+        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       const senderIds = (invites || []).map((i: any) => i.sender_id);
