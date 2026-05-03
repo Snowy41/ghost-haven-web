@@ -210,6 +210,7 @@ const FriendsOverlay = () => {
       .select("*")
       .eq("receiver_id", user.id)
       .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
 
     if (!data) { setGameInvites([]); return; }
