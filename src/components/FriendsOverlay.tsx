@@ -417,9 +417,14 @@ const FriendsOverlay = () => {
       status: "pending",
     });
     if (error) {
-      toast({ title: "Failed to send invite", variant: "destructive" });
+      const msg = /rate limit/i.test(error.message)
+        ? "Invite rate limit reached. Try again later."
+        : /pending invite/i.test(error.message)
+        ? "You already have a pending invite for this friend."
+        : "Failed to send invite";
+      toast({ title: msg, variant: "destructive" });
     } else {
-      toast({ title: "Game invite sent!" });
+      toast({ title: "Game invite sent!", description: "Expires in 4 hours." });
     }
   };
 
