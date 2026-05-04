@@ -58,18 +58,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sha256 = Deno.env.get("HADES_DLL_SHA256");
-    if (!sha256) {
-      return new Response(JSON.stringify({ error: "Missing HADES_DLL_SHA256" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     return new Response(
       JSON.stringify({
         url: signedData.signedUrl,
-        sha256,
       }),
       {
         status: 200,
